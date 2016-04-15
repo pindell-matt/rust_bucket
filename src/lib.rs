@@ -5,8 +5,8 @@ use std::io::prelude::*;
 use std::io;
 use rustc_serialize::json;
 
-pub fn write_file(data: String) -> io::Result<()> {
-    let mut buffer = try!(File::create("./foo"));
+pub fn write_file(data: String, table: &'static str) -> io::Result<()> {
+    let mut buffer = try!(File::create(table.to_string()));
     try!(buffer.write_fmt(format_args!("{}", data)));
     Ok(())
 }
@@ -21,5 +21,5 @@ fn it_works() {
     let mut x = TableData { test_string: String::new() };
     x.test_string = "test me".to_string();
     let encoded = json::encode(&x).unwrap();
-    write_file(encoded);
+    write_file(encoded, "./foo");
 }
