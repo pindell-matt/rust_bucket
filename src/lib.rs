@@ -13,9 +13,9 @@ pub fn write_file(data: String, table: &'static str) -> io::Result<()> {
 }
 
 pub fn read_table(table: &'static str) -> String {
-    let file = File::open(table).expect("no such file");
-    let buf = BufReader::new(file);
-    buf.lines().map(|l| l.expect("Could not parse line")).collect()
+    let file = File::open(table).expect("Table does not exist!");
+    let buf  = BufReader::new(file);
+    buf.lines().map(|l| l.expect("Table read failure!")).collect()
 }
 
 #[derive(RustcEncodable, Debug)]
@@ -25,10 +25,10 @@ struct TableData {
 
 #[test]
 fn it_reads_the_table() {
-    let mut x = TableData { test_string: String::new() };
+    let mut x     = TableData { test_string: String::new() };
     x.test_string = "test me".to_string();
-    let encoded = json::encode(&x).unwrap();
+    let encoded   = json::encode(&x).unwrap();
     write_file(encoded, "./foo");
-    let results  = read_table("./foo");
+    let results = read_table("./foo");
     assert_eq!(results, "{\"test_string\":\"test me\"}");
 }
