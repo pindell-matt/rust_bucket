@@ -24,14 +24,6 @@ struct TableData {
 }
 
 #[test]
-fn it_works() {
-    let mut x = TableData { test_string: String::new() };
-    x.test_string = "test me".to_string();
-    let encoded = json::encode(&x).unwrap();
-    write_file(encoded, "./foo");
-}
-
-#[test]
 fn it_reads_the_table() {
     let mut x = TableData { test_string: String::new() };
     x.test_string = "test me".to_string();
