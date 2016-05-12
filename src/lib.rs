@@ -5,8 +5,10 @@ use std::io::prelude::*;
 use std::io;
 use rustc_serialize::json;
 use std::io::BufReader;
+use std::path::Path;
 
-pub fn write_file(data: String, table: &'static str) -> io::Result<()> {
+pub fn create_table(data: String, table: &'static str) -> io::Result<()> {
+    if Path::new(table).exists() { return Ok(()) };
     let mut buffer = try!(File::create(table.to_string()));
     try!(buffer.write_fmt(format_args!("{}", data)));
     Ok(())
@@ -28,7 +30,24 @@ fn it_reads_the_table() {
     let mut x     = TableData { test_string: String::new() };
     x.test_string = "test me".to_string();
     let encoded   = json::encode(&x).unwrap();
-    write_file(encoded, "./foo");
+    create_table(encoded, "./foo");
     let results = read_table("./foo");
     assert_eq!(results, "{\"test_string\":\"test me\"}");
+}
+
+#[test]
+fn it_wont_overwrite_existing_file() {
+    let mut x     = TableData { test_string: String::new() };
+    x.test_string = "will show".to_string();
+    let encoded   = json::encode(&x).unwrap();
+    create_table(encoded, "./bar");
+    let results = read_table("./bar");
+    assert_eq!(results, "{\"test_string\":\"will show\"}");
+
+    let mut y     = TableData { test_string: String::new() };
+    y.test_string = "won't show".to_string();
+    let encoded   = json::encode(&y).unwrap();
+    create_table(encoded, "./bar");
+    let results = read_table("./bar");
+    assert_eq!(results, "{\"test_string\":\"will show\"}");
 }
