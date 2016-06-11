@@ -2,6 +2,9 @@
 #![plugin(serde_macros)]
 
 extern crate serde_json;
+extern crate serde;
+
+use serde::ser::Serialize;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -13,7 +16,7 @@ use std::any::Any;
 
 mod sc; // sc == schema
 
-pub fn create_table<T: Any + Debug>(table: String, t: T) -> io::Result<()> {
+pub fn create_table<T: Serialize>(table: String, t: T) -> io::Result<()> {
     let serialized = serde_json::to_string(&t).unwrap();
 
     let db_table = format!("./db/{}", table);
