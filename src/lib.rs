@@ -20,10 +20,10 @@ pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result
     let serialized = serde_json::to_string(t).unwrap();
 
     let db_table = Path::new("./db").join(table);
-    if Path::new(&db_table).exists() { return Ok(()) };
+    if db_table.exists() { return Ok(()) };
 
     let mut buffer = try!(File::create(db_table));
-    try!(buffer.write_fmt(format_args!("{}", serialized)));
+    try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
 }
