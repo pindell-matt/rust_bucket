@@ -1,18 +1,31 @@
-extern crate rustc_serialize;
+#![feature(custom_derive, plugin, unboxed_closures)]
+#![plugin(serde_macros)]
+
+extern crate serde_json;
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
-use rustc_serialize::json;
 use std::io::BufReader;
 use std::path::Path;
+use std::fmt::Debug;
+use std::any::Any;
 
-pub fn create_table(data: String, table: &'static str) -> io::Result<()> {
-    if Path::new(table).exists() { return Ok(()) };
-    let mut buffer = try!(File::create(table.to_string()));
-    try!(buffer.write_fmt(format_args!("{}", data)));
+mod sc; // sc == schema
+
+pub fn create_table<T: Any + Debug>(table: String, t: Any) -> io::Result<()> {
+    let serialized = serde_json::to_string(&t).unwrap();
+
+    let db_table = format!("./db/{}", table);
+    if Path::new(&db_table).exists() { return Ok(()) };
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_fmt(format_args!("{}", serialized)));
+
     Ok(())
 }
+
+// let deserialized: sc::Coordinates = serde_json::from_str(&serialized).unwrap();
 
 pub fn read_table(table: &'static str) -> String {
     let file = File::open(table).expect("Table does not exist!");
@@ -20,34 +33,9 @@ pub fn read_table(table: &'static str) -> String {
     buf.lines().map(|l| l.expect("Table read failure!")).collect()
 }
 
-#[derive(RustcEncodable, Debug)]
-struct TableData {
-    test_string: String,
-}
-
 #[test]
-fn it_reads_the_table() {
-    let mut x     = TableData { test_string: String::new() };
-    x.test_string = "test me".to_string();
-    let encoded   = json::encode(&x).unwrap();
-    create_table(encoded, "./foo");
-    let results = read_table("./foo");
-    assert_eq!(results, "{\"test_string\":\"test me\"}");
-}
-
-#[test]
-fn it_wont_overwrite_existing_file() {
-    let mut x     = TableData { test_string: String::new() };
-    x.test_string = "will show".to_string();
-    let encoded   = json::encode(&x).unwrap();
-    create_table(encoded, "./bar");
-    let results = read_table("./bar");
-    assert_eq!(results, "{\"test_string\":\"will show\"}");
-
-    let mut y     = TableData { test_string: String::new() };
-    y.test_string = "won't show".to_string();
-    let encoded   = json::encode(&y).unwrap();
-    create_table(encoded, "./bar");
-    let results = read_table("./bar");
-    assert_eq!(results, "{\"test_string\":\"will show\"}");
+fn it_can_take_any_struct() {
+    let c = sc::Coordinates {x: 7, y: 90};
+    let t_n = "test".to_string();
+    create_table(t_n, c);
 }
