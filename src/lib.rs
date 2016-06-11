@@ -16,10 +16,10 @@ use std::any::Any;
 
 mod sc; // sc == schema
 
-pub fn create_table<T: Serialize>(table: String, t: T) -> io::Result<()> {
-    let serialized = serde_json::to_string(&t).unwrap();
+pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
+    let serialized = serde_json::to_string(t).unwrap();
 
-    let db_table = format!("./db/{}", table);
+    let db_table = Path::new("./db").join(table);
     if Path::new(&db_table).exists() { return Ok(()) };
 
     let mut buffer = try!(File::create(db_table));
@@ -30,7 +30,7 @@ pub fn create_table<T: Serialize>(table: String, t: T) -> io::Result<()> {
 
 // let deserialized: sc::Coordinates = serde_json::from_str(&serialized).unwrap();
 
-pub fn read_table(table: &'static str) -> String {
+pub fn read_table<P: AsRef<Path>>(table: P) -> String {
     let file = File::open(table).expect("Table does not exist!");
     let buf  = BufReader::new(file);
     buf.lines().map(|l| l.expect("Table read failure!")).collect()
@@ -40,5 +40,5 @@ pub fn read_table(table: &'static str) -> String {
 fn it_can_take_any_struct() {
     let c = sc::Coordinates {x: 7, y: 90};
     let t_n = "test".to_string();
-    create_table(t_n, c);
+    create_table(t_n, &c);
 }
