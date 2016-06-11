@@ -13,7 +13,7 @@ use std::any::Any;
 
 mod sc; // sc == schema
 
-pub fn create_table<T: Any + Debug>(table: String, t: Any) -> io::Result<()> {
+pub fn create_table<T: Any + Debug>(table: String, t: T) -> io::Result<()> {
     let serialized = serde_json::to_string(&t).unwrap();
 
     let db_table = format!("./db/{}", table);
