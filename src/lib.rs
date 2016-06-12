@@ -14,6 +14,18 @@ use std::path::Path;
 
 mod sc; // sc is the user defined schema
 
+pub fn add_data_to_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
+    let serialized = serde_json::to_string(t).unwrap();
+
+    let db_table = Path::new("./db").join(table);
+    if db_table.exists() { return Ok(()) };
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(serialized.as_bytes()));
+
+    Ok(())
+}
+
 pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
     let serialized = serde_json::to_string(t).unwrap();
 
@@ -45,14 +57,21 @@ fn create_db_dir() -> io::Result<()>{
 // end of private method /////////////////////////////////////////////////////////////////////////
 
 pub fn read_table<P: AsRef<Path>>(table: P) -> String {
-    let file = File::open(table).expect("Table does not exist!");
-    let buf  = BufReader::new(file);
+    let db_table = Path::new("./db").join(table);
+    let file     = File::open(db_table).expect("Table does not exist!");
+    let buf      = BufReader::new(file);
+
     buf.lines().map(|l| l.expect("Table read failure!")).collect()
 }
 
 #[test]
-fn it_can_take_any_struct() {
-    let c = sc::Coordinates {x: 00, y: 9000};
-    let t_n = "test".to_string();
+fn it_can_create_a_table_and_take_any_struct_to_add_data() {
+    /////////// This test will only pass if you never change the Coordinate values ///////////////
+    let c     = sc::Coordinates {x: 42, y: 9000};
+    let t_n   = "test".to_string();
+    let t_n_t = t_n.clone();
+
     create_table(t_n, &c);
+
+    assert_eq!(serde_json::to_string(&c).unwrap(), read_table(t_n_t))
 }
