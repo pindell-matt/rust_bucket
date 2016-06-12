@@ -16,10 +16,11 @@ use std::collections::HashMap;
 
 mod sc; // sc is the user defined schema
 
+#[derive(Serialize, Deserialize, Debug)]
 struct Data<P: AsRef<Path>, T: Serialize>{
     table:   P,
-    next_id: i32,
-    records: HashMap<i32, T>,
+    next_id: String,
+    records: HashMap<String, T>,
 }
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
@@ -32,18 +33,19 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
 }
 
 #[allow(unused_must_use)]
-pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
+pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     create_db_dir();
 
-    // unable to infer enough type information about `_`;
-    // type annotations or generic parameter binding required
+    let mut record = HashMap::new();
+    record.insert("0".to_string(), t);
+
     let d = Data {
-        table:   table,
-        next_id: 1,
-        records: HashMap::new(),
+        table:   table.clone(),
+        next_id: "1".to_string(),
+        records: record,
    };
 
-    let serialized = serde_json::to_string(t).unwrap();
+    let serialized = serde_json::to_string(&d).unwrap();
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -82,11 +84,12 @@ fn it_can_create_a_table_and_take_any_struct_to_add_data() {
     let b = sc::Coordinates {x: 32, y: 9000};
     let c = sc::Coordinates {x: 42, y: 9000};
 
+    let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
     create_table("test".to_string(), &a);
-    assert_eq!(serde_json::to_string(&a).unwrap(), read_table("test".to_string()));
+    assert_eq!(ex_1, read_table("test".to_string()));
 
-    update_table("test".to_string(), &b);
-    assert_eq!(serde_json::to_string(&b).unwrap(), read_table("test".to_string()));
-
-    update_table("test".to_string(), &c);
+    // update_table("test".to_string(), &b);
+    // assert_eq!(serde_json::to_string(&b).unwrap(), read_table("test".to_string()));
+    //
+    // update_table("test".to_string(), &c);
 }
