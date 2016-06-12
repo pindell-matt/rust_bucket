@@ -12,8 +12,15 @@ use std::path::Path;
 use std::io::BufReader;
 use std::io::prelude::*;
 use serde::ser::Serialize;
+use std::collections::HashMap;
 
 mod sc; // sc is the user defined schema
+
+pub struct Data<T: Serialize>{
+    pub table:   String,
+    pub next_id: i32,
+    pub records: HashMap<i32, T>,
+}
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     let     serialized = serde_json::to_string(t).unwrap();
@@ -49,7 +56,7 @@ fn create_db_dir() -> io::Result<()>{
     match fs::create_dir("db") {
         Err(why) => println!("! {:?}", why.kind()),
         Ok(_)    => {},
-    };
+    }
 
     Ok(())
 }
