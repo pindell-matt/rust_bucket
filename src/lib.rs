@@ -15,9 +15,9 @@ use std::path::Path;
 mod sc; // sc is the user defined schema
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    let serialized = serde_json::to_string(t).unwrap();
-    let db_table = Path::new("./db").join(table);
-    let mut buffer = try!(File::create(db_table));
+    let     serialized = serde_json::to_string(t).unwrap();
+    let     db_table   = Path::new("./db").join(table);
+    let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
@@ -27,9 +27,11 @@ pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result
     create_db_dir();
 
     let serialized = serde_json::to_string(t).unwrap();
-    let db_table = Path::new("./db").join(table);
+    let db_table   = Path::new("./db").join(table);
 
-    if db_table.exists() { return Ok(()) };
+    if db_table.exists() {
+        return Ok(())
+    };
 
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -38,11 +40,15 @@ pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result
 }
 
 fn create_db_dir() -> io::Result<()>{
-    if Path::new("./db").exists() { return Ok(()) }
+    if Path::new("./db").exists() {
+        return Ok(())
+    }
+
     match fs::create_dir("db") {
         Err(why) => println!("! {:?}", why.kind()),
         Ok(_) => {},
     };
+
     Ok(())
 }
 
@@ -55,15 +61,15 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 
 #[test]
 fn it_can_create_a_table_and_take_any_struct_to_add_data() {
-    let c  = sc::Coordinates {x: 42, y: 9000};
-    let c2 = sc::Coordinates {x: 32, y: 9000};
-    let c3 = sc::Coordinates {x: 42, y: 9000};
+    let a = sc::Coordinates {x: 42, y: 9000};
+    let b = sc::Coordinates {x: 32, y: 9000};
+    let c = sc::Coordinates {x: 42, y: 9000};
 
-    create_table("test".to_string(), &c);
-    assert_eq!(serde_json::to_string(&c).unwrap(), read_table("test".to_string()));
+    create_table("test".to_string(), &a);
+    assert_eq!(serde_json::to_string(&a).unwrap(), read_table("test".to_string()));
 
-    update_table("test".to_string(), &c2);
-    assert_eq!(serde_json::to_string(&c2).unwrap(), read_table("test".to_string()));
+    update_table("test".to_string(), &b);
+    assert_eq!(serde_json::to_string(&b).unwrap(), read_table("test".to_string()));
 
-    update_table("test".to_string(), &c3);
+    update_table("test".to_string(), &c);
 }
