@@ -14,13 +14,22 @@ use std::path::Path;
 
 mod sc; // sc is the user defined schema
 
-pub fn add_data_to_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
+pub fn add_data_to_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
+    let serialized = serde_json::to_string(t).unwrap();
+    let pre_data   = read_table(table.clone());
+    // let new_data   =
+    // let mut buffer = try!(File::create(db_table));
+    // try!(buffer.write_all(serialized.as_bytes()));
+
+    Ok(())
+}
+
+fn new_table_data<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
     let serialized = serde_json::to_string(t).unwrap();
 
     let db_table = Path::new("./db").join(table);
-    if db_table.exists() { return Ok(()) };
-
     let mut buffer = try!(File::create(db_table));
+
     try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
@@ -40,9 +49,6 @@ pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result
     Ok(())
 }
 
-// private fn: this creates the db dir if it does not exist yet //////////////////////////////////
-
-#[warn(unused_must_use)]
 fn create_db_dir() -> io::Result<()>{
     if Path::new("./db").exists() { return Ok(()) }
 
@@ -54,8 +60,6 @@ fn create_db_dir() -> io::Result<()>{
     Ok(())
 }
 
-// end of private method /////////////////////////////////////////////////////////////////////////
-
 pub fn read_table<P: AsRef<Path>>(table: P) -> String {
     let db_table = Path::new("./db").join(table);
     let file     = File::open(db_table).expect("Table does not exist!");
@@ -66,7 +70,7 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 
 #[test]
 fn it_can_create_a_table_and_take_any_struct_to_add_data() {
-    /////////// This test will only pass if you never change the Coordinate values ///////////////
+    // Do not change this test :) ///////////////
     let c     = sc::Coordinates {x: 42, y: 9000};
     let t_n   = "test".to_string();
     let t_n_t = t_n.clone();
