@@ -32,14 +32,14 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(unused_must_use)]
+#[allow(unused_must_use, unused_mut)]
 pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     create_db_dir();
 
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
-    let d = Data {
+    let mut d = Data {
         table:   table.clone(),
         next_id: "1".to_string(),
         records: record,
