@@ -17,14 +17,23 @@ use std::collections::HashMap;
 mod sc; // sc is the user defined schema
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Data<P: AsRef<Path>, T: Serialize>{
-    table:   P,
+struct Data<T: Serialize>{
+    table:   String,
     next_id: String,
     records: HashMap<String, T>,
 }
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(t).unwrap();
+    let mut record = HashMap::new();
+    record.insert("0".to_string(), t);
+
+    let d = Data {
+        table:   table.clone(),
+        next_id: "1".to_string(),
+        records: record,
+    };
+
+    let     serialized = serde_json::to_string(&d).unwrap();
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -32,18 +41,18 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(unused_must_use, unused_mut)]
+#[allow(unused_must_use)]
 pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     create_db_dir();
 
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
-    let mut d = Data {
+    let d = Data {
         table:   table.clone(),
         next_id: "1".to_string(),
         records: record,
-   };
+    };
 
     let serialized = serde_json::to_string(&d).unwrap();
     let db_table   = Path::new("./db").join(table);
@@ -81,15 +90,17 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 #[test]
 fn it_can_create_a_table_and_take_any_struct_to_add_data() {
     let a = sc::Coordinates {x: 42, y: 9000};
-    let b = sc::Coordinates {x: 32, y: 9000};
+    let b = sc::Coordinates {x: 32, y: 8765};
     let c = sc::Coordinates {x: 42, y: 9000};
 
     let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+    let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
+
     create_table("test".to_string(), &a);
     assert_eq!(ex_1, read_table("test".to_string()));
 
-    // update_table("test".to_string(), &b);
-    // assert_eq!(serde_json::to_string(&b).unwrap(), read_table("test".to_string()));
-    //
-    // update_table("test".to_string(), &c);
+    update_table("test".to_string(), &b);
+    assert_eq!(ex_2, read_table("test".to_string()));
+
+    update_table("test".to_string(), &c);
 }
