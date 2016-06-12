@@ -1,6 +1,4 @@
-use serde::ser::Serialize;
-use serde::de::Deserialize;
-
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Coordinates {
     pub x: i32,

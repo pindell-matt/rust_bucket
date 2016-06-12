@@ -1,16 +1,17 @@
 #![feature(custom_derive, plugin, unboxed_closures)]
+#![cfg_attr(test, allow(dead_code, unused_must_use, unused_imports))]
 #![plugin(serde_macros)]
 
 extern crate serde_json;
 extern crate serde;
 
-use serde::ser::Serialize;
+use std::io;
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
-use std::io;
-use std::io::BufReader;
 use std::path::Path;
+use std::io::BufReader;
+use std::io::prelude::*;
+use serde::ser::Serialize;
 
 mod sc; // sc is the user defined schema
 
@@ -23,6 +24,7 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
+#[allow(unused_must_use)]
 pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
     create_db_dir();
 
@@ -31,7 +33,7 @@ pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result
 
     if db_table.exists() {
         return Ok(())
-    };
+    }
 
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
