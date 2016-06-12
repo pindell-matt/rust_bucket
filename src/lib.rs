@@ -16,10 +16,10 @@ use std::collections::HashMap;
 
 mod sc; // sc is the user defined schema
 
-pub struct Data<T: Serialize>{
-    pub table:   String,
-    pub next_id: i32,
-    pub records: HashMap<i32, T>,
+struct Data<P: AsRef<Path>, T: Serialize>{
+    table:   P,
+    next_id: i32,
+    records: HashMap<i32, T>,
 }
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
@@ -34,6 +34,14 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
 #[allow(unused_must_use)]
 pub fn create_table<P: AsRef<Path>, T: Serialize>(table: P, t: &T) -> io::Result<()> {
     create_db_dir();
+
+    // unable to infer enough type information about `_`;
+    // type annotations or generic parameter binding required
+    let d = Data {
+        table:   table,
+        next_id: 1,
+        records: HashMap::new(),
+   };
 
     let serialized = serde_json::to_string(t).unwrap();
     let db_table   = Path::new("./db").join(table);
