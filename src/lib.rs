@@ -4,6 +4,7 @@
 
 extern crate serde_json;
 extern crate serde;
+extern crate time;
 
 use std::io;
 use std::fs;
@@ -26,7 +27,7 @@ struct Data<T: Serialize>{
 // public functions first then private functions
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
+    let     serialized = serde_json::to_string(&create_base_data(table.clone(), t)).unwrap();
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -38,7 +39,7 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
 pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     create_db_dir();
 
-    let serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
+    let serialized = serde_json::to_string(&create_base_data(table.clone(), t)).unwrap();
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -60,7 +61,7 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 
 // private functions and tests
 
-fn create_data<T: Serialize>(table: String, t: T) -> Data<T> {
+fn create_base_data<T: Serialize>(table: String, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
@@ -101,5 +102,11 @@ fn it_can_create_a_table_and_take_any_struct_to_add_data() {
     update_table("test".to_string(), &b);
     assert_eq!(ex_2, read_table("test".to_string()));
 
-    update_table("test".to_string(), &c);
+    let mut now_time = time::get_time();
+
+    for n in 1..1001 {
+        update_table("test".to_string(), &c);
+    }
+
+    println!("{:?}", (time::get_time() - now_time));
 }
