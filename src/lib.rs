@@ -16,24 +16,17 @@ use std::collections::HashMap;
 
 mod sc; // sc is the user defined schema
 
+// private struct for the db
 #[derive(Serialize, Deserialize, Debug)]
 struct Data<T: Serialize>{
     table:   String,
     next_id: String,
     records: HashMap<String, T>,
 }
+// public functions first then private functions
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    let mut record = HashMap::new();
-    record.insert("0".to_string(), t);
-
-    let d = Data {
-        table:   table.clone(),
-        next_id: "1".to_string(),
-        records: record,
-    };
-
-    let     serialized = serde_json::to_string(&d).unwrap();
+    let     serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -45,16 +38,7 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
 pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     create_db_dir();
 
-    let mut record = HashMap::new();
-    record.insert("0".to_string(), t);
-
-    let d = Data {
-        table:   table.clone(),
-        next_id: "1".to_string(),
-        records: record,
-    };
-
-    let serialized = serde_json::to_string(&d).unwrap();
+    let serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -65,6 +49,28 @@ pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
+}
+
+pub fn read_table<P: AsRef<Path>>(table: P) -> String {
+    let db_table = Path::new("./db").join(table);
+    let file     = File::open(db_table).expect("Table does not exist!");
+    let buf      = BufReader::new(file);
+    buf.lines().map(|l| l.expect("Table read failure!")).collect()
+}
+
+// private functions and tests
+
+fn create_data<T: Serialize>(table: String, t: T) -> Data<T> {
+    let mut record = HashMap::new();
+    record.insert("0".to_string(), t);
+
+    let d = Data {
+        table:   table.clone(),
+        next_id: "1".to_string(),
+        records: record,
+    };
+
+    d // return the Data<T> struct
 }
 
 fn create_db_dir() -> io::Result<()>{
@@ -78,13 +84,6 @@ fn create_db_dir() -> io::Result<()>{
     }
 
     Ok(())
-}
-
-pub fn read_table<P: AsRef<Path>>(table: P) -> String {
-    let db_table = Path::new("./db").join(table);
-    let file     = File::open(db_table).expect("Table does not exist!");
-    let buf      = BufReader::new(file);
-    buf.lines().map(|l| l.expect("Table read failure!")).collect()
 }
 
 #[test]
