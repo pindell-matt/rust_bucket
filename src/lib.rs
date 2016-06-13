@@ -78,12 +78,7 @@ fn create_db_dir() -> io::Result<()>{
         return Ok(())
     }
 
-    match fs::create_dir("db") {
-        Err(why) => println!("! {:?}", why.kind()),
-        Ok(_)    => {},
-    }
-
-    Ok(())
+    fs::create_dir("db")
 }
 
 #[test]
