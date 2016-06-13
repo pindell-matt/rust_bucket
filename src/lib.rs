@@ -23,6 +23,7 @@ struct Data<T: Serialize>{
     next_id: String,
     records: HashMap<String, T>,
 }
+
 // public functions first then private functions
 
 pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
@@ -34,9 +35,8 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(unused_must_use)]
 pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    create_db_dir();
+    try!(create_db_dir());
 
     let serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
     let db_table   = Path::new("./db").join(table);
