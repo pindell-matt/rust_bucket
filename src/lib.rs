@@ -26,8 +26,8 @@ struct Data<T: Serialize>{
 
 // public functions first then private functions
 
-pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
+pub fn update_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
+    let     serialized = serde_json::to_string(&create_data(table, t)).unwrap();
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -35,10 +35,10 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
+pub fn create_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     try!(create_db_dir());
 
-    let serialized = serde_json::to_string(&create_data(table.clone(), t)).unwrap();
+    let serialized = serde_json::to_string(&create_data(table, t)).unwrap();
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -60,12 +60,12 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 
 // private functions and tests
 
-fn create_data<T: Serialize>(table: String, t: T) -> Data<T> {
+fn create_data<T: Serialize>(table: &str, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
     let d = Data {
-        table:   table.clone(),
+        table:   table.to_string(),
         next_id: "1".to_string(),
         records: record,
     };
