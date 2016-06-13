@@ -1,10 +1,8 @@
-#![feature(custom_derive, plugin)]
-#![cfg_attr(test, allow(dead_code, unused_must_use, unused_imports))]
+#![feature(custom_derive, plugin, test)]
 #![plugin(serde_macros)]
 
 extern crate serde_json;
 extern crate serde;
-extern crate time;
 
 use std::io;
 use std::fs;
@@ -82,26 +80,34 @@ fn create_db_dir() -> io::Result<()>{
     fs::create_dir("db")
 }
 
-#[test]
-fn it_can_create_a_table_and_take_any_struct_to_add_data() {
-    let a = sc::Coordinates {x: 42, y: 9000};
-    let b = sc::Coordinates {x: 32, y: 8765};
-    let c = sc::Coordinates {x: 42, y: 9000};
+#[cfg(test)]
+mod tests {
+    extern crate test;
 
-    let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
-    let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
+    use self::test::Bencher;
 
-    create_table("test".to_string(), &a);
-    assert_eq!(ex_1, read_table("test".to_string()));
+    use super::*;
+    use sc;
 
-    update_table("test".to_string(), &b);
-    assert_eq!(ex_2, read_table("test".to_string()));
+    #[test]
+    fn it_can_create_a_table_and_take_any_struct_to_add_data() {
+        let a = sc::Coordinates {x: 42, y: 9000};
+        let b = sc::Coordinates {x: 32, y: 8765};
 
-    let mut now_time = time::get_time();
+        let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+        let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
 
-    for n in 1..1001 {
-        update_table("test".to_string(), &c);
+        create_table("test", &a).unwrap();
+        assert_eq!(ex_1, read_table("test".to_string()));
+
+        update_table("test", &b).unwrap();
+        assert_eq!(ex_2, read_table("test".to_string()));
     }
 
-    println!("{:?}", (time::get_time() - now_time));
+    #[bench]
+    fn bench_update_table(b: &mut Bencher) {
+        let object = sc::Coordinates {x: 42, y: 9000};
+
+        b.iter(|| update_table("test", &object).unwrap());
+    }
 }
