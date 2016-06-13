@@ -1,10 +1,8 @@
-#![feature(custom_derive, plugin, unboxed_closures)]
-#![cfg_attr(test, allow(dead_code, unused_must_use, unused_imports))]
+#![feature(custom_derive, plugin, test)]
 #![plugin(serde_macros)]
 
 extern crate serde_json;
 extern crate serde;
-extern crate time;
 
 use std::io;
 use std::fs;
@@ -24,9 +22,10 @@ struct Data<T: Serialize>{
     next_id: String,
     records: HashMap<String, T>,
 }
+
 // public functions first then private functions
 
-pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
+pub fn update_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     let     serialized = serde_json::to_string(&create_base_data(table.clone(), t)).unwrap();
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
@@ -35,11 +34,10 @@ pub fn update_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(unused_must_use)]
-pub fn create_table<T: Serialize>(table: String, t: &T) -> io::Result<()> {
-    create_db_dir();
+pub fn create_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
+    try!(create_db_dir());
 
-    let serialized = serde_json::to_string(&create_base_data(table.clone(), t)).unwrap();
+    let serialized = serde_json::to_string(&create_base_data(table, t)).unwrap();
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -61,12 +59,12 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
 
 // private functions and tests
 
-fn create_base_data<T: Serialize>(table: String, t: T) -> Data<T> {
+fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
     let d = Data {
-        table:   table.clone(),
+        table:   table.to_string(),
         next_id: "1".to_string(),
         records: record,
     };
@@ -79,34 +77,37 @@ fn create_db_dir() -> io::Result<()>{
         return Ok(())
     }
 
-    match fs::create_dir("db") {
-        Err(why) => println!("! {:?}", why.kind()),
-        Ok(_)    => {},
-    }
-
-    Ok(())
+    fs::create_dir("db")
 }
 
-#[test]
-fn it_can_create_a_table_and_take_any_struct_to_add_data() {
-    let a = sc::Coordinates {x: 42, y: 9000};
-    let b = sc::Coordinates {x: 32, y: 8765};
-    let c = sc::Coordinates {x: 42, y: 9000};
+#[cfg(test)]
+mod tests {
+    extern crate test;
 
-    let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
-    let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
+    use self::test::Bencher;
 
-    create_table("test".to_string(), &a);
-    assert_eq!(ex_1, read_table("test".to_string()));
+    use super::*;
+    use sc;
 
-    update_table("test".to_string(), &b);
-    assert_eq!(ex_2, read_table("test".to_string()));
+    #[test]
+    fn it_can_create_a_table_and_take_any_struct_to_add_data() {
+        let a = sc::Coordinates {x: 42, y: 9000};
+        let b = sc::Coordinates {x: 32, y: 8765};
 
-    let mut now_time = time::get_time();
+        let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+        let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
 
-    for n in 1..1001 {
-        update_table("test".to_string(), &c);
+        create_table("test", &a).unwrap();
+        assert_eq!(ex_1, read_table("test".to_string()));
+
+        update_table("test", &b).unwrap();
+        assert_eq!(ex_2, read_table("test".to_string()));
     }
 
-    println!("{:?}", (time::get_time() - now_time));
+    #[bench]
+    fn bench_update_table(b: &mut Bencher) {
+        let object = sc::Coordinates {x: 42, y: 9000};
+
+        b.iter(|| update_table("test", &object).unwrap());
+    }
 }
