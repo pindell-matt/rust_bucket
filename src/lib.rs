@@ -1,4 +1,4 @@
-#![feature(custom_derive, plugin, unboxed_closures)]
+#![feature(custom_derive, plugin)]
 #![cfg_attr(test, allow(dead_code, unused_must_use, unused_imports))]
 #![plugin(serde_macros)]
 
