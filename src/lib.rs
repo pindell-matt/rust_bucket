@@ -57,6 +57,13 @@ pub fn read_table<P: AsRef<Path>>(table: P) -> String {
     buf.lines().map(|l| l.expect("Table read failure!")).collect()
 }
 
+#[allow(dead_code)]
+pub fn drop_table(table: &str) -> io::Result<()> {
+    let t = Path::new("./db").join(table);
+    try!(fs::remove_file(t));
+    Ok(())
+}
+
 // private functions and tests
 
 fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
@@ -88,9 +95,11 @@ mod tests {
 
     use super::*;
     use sc;
+    use std::fmt;
 
     #[test]
-    fn it_can_create_a_table_and_take_any_struct_to_add_data() {
+    #[allow(unused_must_use)]
+    fn it_can_create_update_and_drop_a_table_and_take_any_struct_to_add_data() {
         let a = sc::Coordinates {x: 42, y: 9000};
         let b = sc::Coordinates {x: 32, y: 8765};
 
@@ -102,6 +111,26 @@ mod tests {
 
         update_table("test", &b).unwrap();
         assert_eq!(ex_2, read_table("test".to_string()));
+
+        drop_table("test");
+    }
+
+    #[test]
+    #[allow(unused_must_use)]
+    // This is not a benchmark - it is just to make sure this can be done correctly
+    fn it_can_create_100_tables_and_drop_them_all() {
+        for n in 1..101 {
+            let table = fmt::format(format_args!("{}", n));
+            let a     = sc::Coordinates {x: 42, y: 9000};
+
+            create_table(&*table, &a).unwrap();
+        }
+
+        for k in 1..101 {
+            let table = fmt::format(format_args!("{}", k));
+
+            drop_table(&*table);
+        }
     }
 
     #[bench]
@@ -110,4 +139,5 @@ mod tests {
 
         b.iter(|| update_table("test", &object).unwrap());
     }
+
 }
