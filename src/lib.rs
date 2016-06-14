@@ -67,7 +67,7 @@ pub fn drop_table(table: &str) -> io::Result<()> {
 
 #[allow(unused_must_use)]
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> io::Result<()> {
-    let mut data: Data<T>     = serde_json::from_str(&read_table("test")).unwrap();
+    let mut data: Data<_>     = serde_json::from_str(&read_table("test")).unwrap();
     let     increased_next_id = data.next_id.parse::<i32>().unwrap();
     let     new_id            = increased_next_id + 1;
 
@@ -90,7 +90,7 @@ fn upgrade_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
 
 #[allow(dead_code, unused_must_use)]
 fn read_records<T: Serialize + Deserialize>() -> HashMap<String, T> {
-    let data: Data<T> = serde_json::from_str(&read_table("test")).unwrap();
+    let data: Data<_> = serde_json::from_str(&read_table("test")).unwrap();
     data.records
 }
 
