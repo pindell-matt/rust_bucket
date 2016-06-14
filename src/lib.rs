@@ -124,7 +124,6 @@ mod tests {
 
     use super::*;
     use sc;
-    use std::fmt;
 
     #[test]
     #[allow(unused_must_use)]
