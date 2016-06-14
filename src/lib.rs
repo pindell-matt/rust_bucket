@@ -35,15 +35,6 @@ pub fn update_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-pub fn upgrade_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(t).unwrap();
-    let     db_table   = Path::new("./db").join(table);
-    let mut buffer     = try!(File::create(db_table));
-    try!(buffer.write_all(serialized.as_bytes()));
-
-    Ok(())
-}
-
 pub fn create_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     try!(create_db_dir());
 
@@ -88,8 +79,17 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> io::Resu
 
 // private functions and tests
 
+fn upgrade_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
+    let     serialized = serde_json::to_string(t).unwrap();
+    let     db_table   = Path::new("./db").join(table);
+    let mut buffer     = try!(File::create(db_table));
+    try!(buffer.write_all(serialized.as_bytes()));
+
+    Ok(())
+}
+
 #[allow(dead_code, unused_must_use)]
-pub fn read_records<T: Serialize + Deserialize>() -> HashMap<String, T> {
+fn read_records<T: Serialize + Deserialize>() -> HashMap<String, T> {
     let data: Data<T> = serde_json::from_str(&read_table("test")).unwrap();
     data.records
 }
@@ -132,6 +132,7 @@ mod tests {
         let a = sc::Coordinates {x: 42, y: 9000};
         let b = sc::Coordinates {x: 32, y: 8765};
         let c = sc::Coordinates {x: 23, y: 900};
+        let d = sc::Coordinates {x: 105, y: 7382};
 
         let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
         let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
@@ -147,9 +148,11 @@ mod tests {
 
         append_records("test", b);
         append_records("test", c);
+        append_records("test", d);
 
         assert!(read_table("test".to_string()).contains("2"));
         assert!(read_table("test".to_string()).contains("3"));
+        assert!(read_table("test".to_string()).contains("4"));
 
         drop_table("test");
     }
@@ -178,5 +181,4 @@ mod tests {
 
         b.iter(|| update_table("test", &object).unwrap());
     }
-
 }
