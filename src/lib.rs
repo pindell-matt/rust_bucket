@@ -162,14 +162,14 @@ mod tests {
     // This is not a benchmark - it is just to make sure this can be done correctly
     fn it_can_create_100_tables_and_drop_them_all() {
         for n in 1..101 {
-            let table = fmt::format(format_args!("{}", n));
+            let table = format!("{}", n);
             let a     = sc::Coordinates {x: 42, y: 9000};
 
             create_table(&*table, &a).unwrap();
         }
 
         for k in 1..101 {
-            let table = fmt::format(format_args!("{}", k));
+            let table = format!("{}", k);
 
             drop_table(&*table);
         }
