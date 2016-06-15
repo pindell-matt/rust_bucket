@@ -16,6 +16,8 @@ use std::collections::HashMap;
 
 mod sc; // sc is the user defined schema
 
+pub mod errors;
+
 // private struct for the db
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Data<T: Serialize>{
