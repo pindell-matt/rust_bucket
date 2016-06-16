@@ -135,14 +135,14 @@ mod tests {
         let c = sc::Coordinates {x: 23, y: 900};
         let d = sc::Coordinates {x: 105, y: 7382};
 
-        let ex_1 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
-        let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
+        let e = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+        let f = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
 
         create_table("test", &a).unwrap();
-        assert_eq!(ex_1, read_table("test").unwrap());
+        assert_eq!(e, read_table("test").unwrap());
 
         update_table("test", &b).unwrap();
-        assert_eq!(ex_2, read_table("test").unwrap());
+        assert_eq!(f, read_table("test").unwrap());
 
         drop_table("test").unwrap();
         create_table("test", &a).unwrap();
