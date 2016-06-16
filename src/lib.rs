@@ -1,4 +1,5 @@
-#![feature(custom_derive, plugin, test)]
+#![feature(custom_derive, plugin)]
+#![cfg_attr(test, feature(test))]
 #![plugin(serde_macros)]
 
 extern crate serde_json;
