@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["Matt Pindell <pindell.m@gmail.com>", "Regis Boudinot <boudinot.regis@yahoo.com>"]
 
 [dependencies]
-rustc-serialize = "*"
 serde = "*"
 serde_json = "*"
 serde_macros = "*"
