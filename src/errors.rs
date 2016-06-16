@@ -8,7 +8,7 @@ use std::fmt::{self, Display, Formatter};
 use serde_json;
 
 // Bring the constructors of Error into scope so we can use them without an `Error::` incantation
-use self::Error::{Io, Serde};
+use self::Error::{Io, Serde, NoSuchTable};
 
 /// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
 pub type Result<T> = std_result::Result<T, Error>;
@@ -23,7 +23,10 @@ pub enum Error {
     ///
     /// `serde_json` makes no type-level distinction between serialization and deserialization
     /// errors, so we inherit that silliness.
-    Serde(serde_json::Error)
+    Serde(serde_json::Error),
+
+    /// The user tried to read a table, but no such table exists.
+    NoSuchTable(String)
 }
 
 impl From<io::Error> for Error {
@@ -48,7 +51,9 @@ impl Display for Error {
             Serde(ref e) => {
                 try!(write!(f, "Error (de)serializing: "));
                 e.fmt(f)
-            }
+            },
+            NoSuchTable(ref t) =>
+                write!(f, "Tried to open the table \"{}\", which does not exist.", t)
         }
     }
 }
@@ -56,15 +61,17 @@ impl Display for Error {
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Io(ref e) => e.description(),
-            Serde(ref e) => e.description()
+            Io(ref e)      => e.description(),
+            Serde(ref e)   => e.description(),
+            NoSuchTable(_) => "Tried to open a table that doesn't exist"
         }
     }
 
     fn cause(&self) -> Option<&std_error::Error> {
         match *self {
-            Io(ref e) => Some(e),
-            Serde(ref e) => Some(e)
+            Io(ref e)      => Some(e),
+            Serde(ref e)   => Some(e),
+            NoSuchTable(_) => None
         }
     }
 }

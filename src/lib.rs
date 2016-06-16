@@ -9,7 +9,6 @@ use std::fs;
 use std::fs::File;
 use std::path::Path;
 use serde::Deserialize;
-use std::io::BufReader;
 use std::io::prelude::*;
 use serde::ser::Serialize;
 use std::collections::HashMap;
@@ -17,6 +16,7 @@ use std::collections::HashMap;
 mod sc; // sc is the user defined schema
 
 pub mod errors;
+use errors::{Result, Error};
 
 // private struct for the db
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -28,8 +28,8 @@ pub struct Data<T: Serialize>{
 
 // public functions first then private functions
 
-pub fn update_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(&create_base_data(table.clone(), t)).unwrap();
+pub fn update_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
+    let     serialized = try!(serde_json::to_string(&create_base_data(table.clone(), t)));
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -37,10 +37,10 @@ pub fn update_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-pub fn create_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
+pub fn create_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     try!(create_db_dir());
 
-    let serialized = serde_json::to_string(&create_base_data(table, t)).unwrap();
+    let serialized = try!(serde_json::to_string(&create_base_data(table, t)));
     let db_table   = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -53,23 +53,29 @@ pub fn create_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-pub fn read_table<P: AsRef<Path>>(table: P) -> String {
+pub fn read_table(table: &str) -> Result<String> {
     let db_table = Path::new("./db").join(table);
-    let file     = File::open(db_table).expect("Table does not exist!");
-    let buf      = BufReader::new(file);
-    buf.lines().map(|l| l.expect("Table read failure!")).collect()
+    let mut file = match File::open(db_table) {
+        Ok(f) => f,
+        Err(ref e) if e.kind() == io::ErrorKind::NotFound =>
+            return Err(Error::NoSuchTable(table.to_owned())),
+        Err(e) => return Err(Error::Io(e))
+    };
+
+    let mut buffer = String::new();
+    try!(file.read_to_string(&mut buffer));
+
+    Ok(buffer)
 }
 
-#[allow(dead_code)]
 pub fn drop_table(table: &str) -> io::Result<()> {
     let t = Path::new("./db").join(table);
     try!(fs::remove_file(t));
     Ok(())
 }
 
-#[allow(unused_must_use)]
-pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> io::Result<()> {
-    let mut data: Data<_>     = serde_json::from_str(&read_table("test")).unwrap();
+pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
+    let mut data: Data<_>     = serde_json::from_str(&try!(read_table("test"))).unwrap();
     let     increased_next_id = data.next_id.parse::<i32>().unwrap();
     let     new_id            = increased_next_id + 1;
 
@@ -81,8 +87,8 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> io::Resu
 
 // private functions and tests
 
-fn upgrade_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
-    let     serialized = serde_json::to_string(t).unwrap();
+fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
+    let     serialized = try!(serde_json::to_string(t));
     let     db_table   = Path::new("./db").join(table);
     let mut buffer     = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -90,10 +96,10 @@ fn upgrade_table<T: Serialize>(table: &str, t: &T) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code, unused_must_use)]
-fn read_records<T: Serialize + Deserialize>() -> HashMap<String, T> {
-    let data: Data<_> = serde_json::from_str(&read_table("test")).unwrap();
-    data.records
+#[allow(dead_code)]
+fn read_records<T: Serialize + Deserialize>() -> Result<HashMap<String, T>> {
+    let data: Data<_> = try!(serde_json::from_str(&try!(read_table("test"))));
+    Ok(data.records)
 }
 
 fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
@@ -128,7 +134,6 @@ mod tests {
     use sc;
 
     #[test]
-    #[allow(unused_must_use)]
     fn it_can_create_update_and_drop_a_table_and_take_any_struct_to_add_data() {
         let a = sc::Coordinates {x: 42, y: 9000};
         let b = sc::Coordinates {x: 32, y: 8765};
@@ -139,27 +144,26 @@ mod tests {
         let ex_2 = "{\"table\":\"test\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":32,\"y\":8765}}}";
 
         create_table("test", &a).unwrap();
-        assert_eq!(ex_1, read_table("test".to_string()));
+        assert_eq!(ex_1, read_table("test").unwrap());
 
         update_table("test", &b).unwrap();
-        assert_eq!(ex_2, read_table("test".to_string()));
+        assert_eq!(ex_2, read_table("test").unwrap());
 
-        drop_table("test");
+        drop_table("test").unwrap();
         create_table("test", &a).unwrap();
 
-        append_records("test", b);
-        append_records("test", c);
-        append_records("test", d);
+        append_records("test", b).unwrap();
+        append_records("test", c).unwrap();
+        append_records("test", d).unwrap();
 
-        assert!(read_table("test".to_string()).contains("2"));
-        assert!(read_table("test".to_string()).contains("3"));
-        assert!(read_table("test".to_string()).contains("4"));
+        assert!(read_table("test").unwrap().contains("2"));
+        assert!(read_table("test").unwrap().contains("3"));
+        assert!(read_table("test").unwrap().contains("4"));
 
-        drop_table("test");
+        drop_table("test").unwrap();
     }
 
     #[test]
-    #[allow(unused_must_use)]
     // This is not a benchmark - it is just to make sure this can be done correctly
     fn it_can_create_100_tables_and_drop_them_all() {
         for n in 1..101 {
@@ -172,7 +176,7 @@ mod tests {
         for k in 1..101 {
             let table = format!("{}", k);
 
-            drop_table(&*table);
+            drop_table(&*table).unwrap();
         }
     }
 
