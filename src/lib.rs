@@ -76,7 +76,7 @@ pub fn drop_table(table: &str) -> io::Result<()> {
 }
 
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
-    let mut data: Data<_>     = serde_json::from_str(&try!(read_table("test"))).unwrap();
+    let mut data: Data<_>     = serde_json::from_str(&try!(read_table(table))).unwrap();
     let     increased_next_id = data.next_id.parse::<i32>().unwrap();
     let     new_id            = increased_next_id + 1;
 
@@ -95,12 +95,6 @@ fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
-}
-
-#[allow(dead_code)]
-fn read_records<T: Serialize + Deserialize>() -> Result<HashMap<String, T>> {
-    let data: Data<_> = try!(serde_json::from_str(&try!(read_table("test"))));
-    Ok(data.records)
 }
 
 fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
