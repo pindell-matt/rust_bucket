@@ -19,7 +19,6 @@ mod sc; // sc is the user defined schema
 pub mod errors;
 use errors::{Result, Error};
 
-// Private struct for the db
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Data<T: Serialize> {
     pub table: String,
