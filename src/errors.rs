@@ -10,22 +10,19 @@ use serde_json;
 // Bring the constructors of Error into scope so we can use them without an `Error::` incantation
 use self::Error::{Io, Serde, NoSuchTable};
 
-/// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
+// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
 pub type Result<T> = std_result::Result<T, Error>;
 
-/// Errors that can occur during `fe_bucket` operations
+// Errors that can occur during `fe_bucket` operations
 #[derive(Debug)]
 pub enum Error {
-    /// Something went wrong internally while trying to perform IO.
+    // Something went wrong internally while trying to perform IO.
     Io(io::Error),
-
-    /// Problems with (de)serializing tables.
-    ///
-    /// `serde_json` makes no type-level distinction between serialization and deserialization
-    /// errors, so we inherit that silliness.
+    // Problems with (de)serializing tables.
+    // `serde_json` makes no type-level distinction between serialization and deserialization
+    // errors, so we inherit that silliness.
     Serde(serde_json::Error),
-
-    /// The user tried to read a table, but no such table exists.
+    // The user tried to read a table, but no such table exists.
     NoSuchTable(String)
 }
 
