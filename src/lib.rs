@@ -89,13 +89,13 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<(
     upgrade_table(table, &data)
 }
 
-// This returns an actual type. Only to be used as a data manipulator. Not an IO operation
+// This returns an actual type. Only to be used as a data manipulator. Not a `Result<()>`.
 pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Data<T> {
     let data: Data<T> = serde_json::from_str(&read_table(table).unwrap()).unwrap();
     data
 }
 
-// This returns the HashMap<String, T> of the given table. Not an IO operation
+// This returns the HashMap<String, T> of the given table. Not a `Result<()>`.
 pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> HashMap<String, T> {
     get_table(table).records
 }
