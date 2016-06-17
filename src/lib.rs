@@ -32,7 +32,7 @@ pub struct Data<T: Serialize> {
 //////////////////////
 
 pub fn update_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
-    let serialized = try!(serde_json::to_string(&create_base_data(table.clone(), t)));
+    let serialized = try!(serde_json::to_string(&create_base_data(table, t)));
     let db_table = Path::new("./db").join(table);
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
@@ -79,7 +79,7 @@ pub fn drop_table(table: &str) -> io::Result<()> {
 }
 
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
-    let mut data: Data<_> = serde_json::from_str(&try!(read_table(table))).unwrap();
+    let mut data = get_table(table);
     let increased_next_id = data.next_id.parse::<i32>().unwrap();
     let new_id = increased_next_id + 1;
 
