@@ -10,7 +10,7 @@
 
 ### If your are on Windows: 
 
-*Travis CI will check your commits.*
+*Travis CI will check your commits on a PR.*
 
 But to save Travis CI from building everytime, here is a Vagrantfile that you should setup!
 
@@ -34,6 +34,8 @@ Vagrant.configure(2) do |config|
   end
 end
 ```
+
+### Steps to be done when using Vagrant:
 
 `vagrant up`
 
