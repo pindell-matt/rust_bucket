@@ -188,6 +188,6 @@ mod tests {
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates {x: 42, y: 9000};
 
-        b.iter(|| update_table("test", &object).unwrap());
+        b.iter(|| update_table("test2", &object).unwrap());
     }
 }
