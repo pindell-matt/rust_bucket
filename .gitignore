@@ -1,3 +1,7 @@
 target
 Cargo.lock
-db/
+Vagrantfile
+
+# Ignore everything but the test2 file for bench test to pass on cargo test
+db/*
+!db/test2
