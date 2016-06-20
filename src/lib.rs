@@ -108,6 +108,10 @@ pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> HashMap<Str
     get_table(table).records
 }
 
+pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
+    get_table_records(table).remove(id).unwrap()
+}
+
 ///////////////////////
 // Private functions //
 ///////////////////////
@@ -201,6 +205,17 @@ mod tests {
 
             drop_table(&*table).unwrap();
         }
+    }
+
+    #[test]
+    fn it_can_get_and_find() {
+        let a = sc::Coordinates { x: 42, y: 9000 };
+
+        create_table("test3", &a).unwrap();
+
+        assert_eq!(a, find("test3", "0"));
+
+        drop_table("test3").unwrap();
     }
 
     #[bench]
