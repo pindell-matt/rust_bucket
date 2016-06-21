@@ -239,14 +239,21 @@ mod tests {
     #[test]
     fn it_can_return_json() {
         let a = sc::Coordinates { x: 42, y: 9000 };
-
         create_table("test5", &a).unwrap();
-
         assert_eq!(a, find("test5", "0"));
 
-        let b: Data<T> = get_j_table("test5");
+        let b: String = get_j_table::<sc::Coordinates>("test5");
+        let c: String = get_j_table_records::<sc::Coordinates>("test5");
+        let d: String = j_find::<sc::Coordinates>("test5", "0");
 
-        assert_eq!("", b);
+        let j = "{\"table\":\"test5\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+        assert_eq!(j, b);
+
+        let k = "{\"0\":{\"x\":42,\"y\":9000}}";
+        assert_eq!(k, c);
+
+        let l = "{\"x\":42,\"y\":9000}";
+        assert_eq!(l, d);
 
         drop_table("test5").unwrap();
     }
