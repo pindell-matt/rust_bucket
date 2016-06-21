@@ -236,6 +236,21 @@ mod tests {
         drop_table("test3").unwrap();
     }
 
+    #[test]
+    fn it_can_return_json() {
+        let a = sc::Coordinates { x: 42, y: 9000 };
+
+        create_table("test5", &a).unwrap();
+
+        assert_eq!(a, find("test5", "0"));
+
+        let b: Data<T> = get_j_table("test5");
+
+        assert_eq!("", b);
+
+        drop_table("test5").unwrap();
+    }
+
     #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
