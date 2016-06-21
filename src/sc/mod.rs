@@ -8,7 +8,7 @@
 // terms.
 
 #[allow(dead_code)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 
 pub struct Coordinates {
     pub x: i32,
