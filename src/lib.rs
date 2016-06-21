@@ -112,6 +112,24 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
     get_table_records(table).remove(id).unwrap()
 }
 
+pub fn j_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
+    let incoming_record: T = find(table, id);
+    let json_record = serde_json::to_string(&incoming_record);
+    json_record.unwrap()
+}
+
+pub fn get_j_table_records<T: Serialize + Deserialize>(table: &str) -> String {
+    let records: HashMap<String, T> = get_table_records(table);
+    let json_records = serde_json::to_string(&records);
+    json_records.unwrap()
+}
+
+pub fn get_j_table<T: Serialize + Deserialize>(table: &str) -> String {
+    let table: Data<T> = get_table(table);
+    let json_table = serde_json::to_string(&table);
+    json_table.unwrap()
+}
+
 ///////////////////////
 // Private functions //
 ///////////////////////
@@ -218,10 +236,39 @@ mod tests {
         drop_table("test3").unwrap();
     }
 
+    #[test]
+    fn it_can_return_json() {
+        let a = sc::Coordinates { x: 42, y: 9000 };
+        create_table("test5", &a).unwrap();
+        assert_eq!(a, find("test5", "0"));
+
+        let b: String = get_j_table::<sc::Coordinates>("test5");
+        let c: String = get_j_table_records::<sc::Coordinates>("test5");
+        let d: String = j_find::<sc::Coordinates>("test5", "0");
+
+        let j = "{\"table\":\"test5\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
+        assert_eq!(j, b);
+
+        let k = "{\"0\":{\"x\":42,\"y\":9000}}";
+        assert_eq!(k, c);
+
+        let l = "{\"x\":42,\"y\":9000}";
+        assert_eq!(l, d);
+
+        drop_table("test5").unwrap();
+    }
+
     #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
 
         b.iter(|| update_table("test2", &object).unwrap());
+    }
+
+    #[bench]
+    fn bench_create_table(b: &mut Bencher) {
+        let object = sc::Coordinates { x: 42, y: 9000 };
+
+        b.iter(|| create_table("test4", &object).unwrap());
     }
 }
