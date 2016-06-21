@@ -113,9 +113,21 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
 }
 
 pub fn j_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
-    let incoming_records: T = find(table, id);
-    let json_records = serde_json::to_string(&incoming_records);
+    let incoming_record: T = find(table, id);
+    let json_record = serde_json::to_string(&incoming_record);
+    json_record.unwrap()
+}
+
+pub fn get_j_table_records<T: Serialize + Deserialize>(table: &str) -> String {
+    let records: HashMap<String, T> = get_table_records(table);
+    let json_records = serde_json::to_string(&records);
     json_records.unwrap()
+}
+
+pub fn get_j_table<T: Serialize + Deserialize>(table: &str) -> String {
+    let table: Data<T> = get_table(table);
+    let json_table = serde_json::to_string(&table);
+    json_table.unwrap()
 }
 
 ///////////////////////
