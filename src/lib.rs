@@ -112,6 +112,12 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
     get_table_records(table).remove(id).unwrap()
 }
 
+pub fn j_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
+    let incoming_records: T = find(table, id);
+    let json_records = serde_json::to_string(&incoming_records);
+    json_records.unwrap()
+}
+
 ///////////////////////
 // Private functions //
 ///////////////////////
@@ -223,5 +229,12 @@ mod tests {
         let object = sc::Coordinates { x: 42, y: 9000 };
 
         b.iter(|| update_table("test2", &object).unwrap());
+    }
+
+    #[bench]
+    fn bench_create_table(b: &mut Bencher) {
+        let object = sc::Coordinates { x: 42, y: 9000 };
+
+        b.iter(|| create_table("test4", &object).unwrap());
     }
 }
