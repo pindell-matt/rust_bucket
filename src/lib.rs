@@ -35,9 +35,9 @@ pub struct Data<T: Serialize> {
     pub records: HashMap<String, T>,
 }
 
-//////////////////////
-// Public functions //
-//////////////////////
+/// ///////////////////
+/// Public functions //
+/// ///////////////////
 
 pub fn update_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(&create_base_data(table, t)));
@@ -125,14 +125,12 @@ pub fn get_j_table_records<T: Serialize + Deserialize>(table: &str) -> String {
 }
 
 pub fn get_j_table<T: Serialize + Deserialize>(table: &str) -> String {
-    let table: Data<T> = get_table(table);
-    let json_table = serde_json::to_string(&table);
-    json_table.unwrap()
+    read_table(table).unwrap()
 }
 
-///////////////////////
-// Private functions //
-///////////////////////
+/// ////////////////////
+/// Private functions //
+/// ////////////////////
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
@@ -164,10 +162,9 @@ fn create_db_dir() -> io::Result<()> {
     fs::create_dir("db")
 }
 
-///////////
-// Tests //
-///////////
-
+/// ////////
+/// Tests //
+/// ////////
 #[cfg(test)]
 mod tests {
     extern crate test;
