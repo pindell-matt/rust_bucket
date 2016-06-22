@@ -128,9 +128,9 @@ pub fn get_j_table<T: Serialize + Deserialize>(table: &str) -> String {
     read_table(table).unwrap()
 }
 
-/// ////////////////////
-/// Private functions //
-/// ////////////////////
+/// /////////////////////
+/// Private functions ///
+/// /////////////////////
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
