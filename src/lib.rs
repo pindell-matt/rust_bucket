@@ -256,6 +256,13 @@ mod tests {
     }
 
     #[bench]
+    fn bench_create_table(b: &mut Bencher) {
+        let object = sc::Coordinates { x: 42, y: 9000 };
+
+        b.iter(|| create_table("test4", &object).unwrap());
+    }
+
+    #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
 
@@ -263,9 +270,28 @@ mod tests {
     }
 
     #[bench]
-    fn bench_create_table(b: &mut Bencher) {
-        let object = sc::Coordinates { x: 42, y: 9000 };
+    fn bench_read_table(b: &mut Bencher) {
+        b.iter(|| read_table("test2").unwrap());
+    }
 
-        b.iter(|| create_table("test4", &object).unwrap());
+    #[bench]
+    fn bench_get_j_table(b: &mut Bencher) {
+        let a = get_j_table::<sc::Coordinates>;
+        
+        b.iter(|| a("test2"));
+    }
+
+    #[bench]
+    fn bench_get_j_table_records(b: &mut Bencher) {
+        let a = get_j_table_records::<sc::Coordinates>;
+
+        b.iter(|| a("test2"));
+    }
+
+    #[bench]
+    fn bench_get_j_find(b: &mut Bencher) {
+        let a = j_find::<sc::Coordinates>;
+
+        b.iter(|| a("test2", "0"));
     }
 }
