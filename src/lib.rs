@@ -294,4 +294,10 @@ mod tests {
 
         b.iter(|| a("test2", "0"));
     }
+
+    #[bench]
+    fn bench_find(b: &mut Bencher) {
+        let a = find::<sc::Coordinates>;
+        b.iter(|| a("test2", "0"));
+    }
 }
