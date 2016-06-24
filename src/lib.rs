@@ -23,11 +23,13 @@ use std::io::prelude::*;
 use serde::ser::Serialize;
 use std::collections::HashMap;
 
-mod sc; // sc is the user defined schema
+// sc is the user defined schema
+mod sc;
 
 pub mod errors;
 use errors::{Result, Error};
 
+/// The table structure.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Data<T: Serialize> {
     pub table: String,
@@ -35,9 +37,7 @@ pub struct Data<T: Serialize> {
     pub records: HashMap<String, T>,
 }
 
-/// ///////////////////
-/// Public functions //
-/// ///////////////////
+// Public functions *******************************************************************************
 
 pub fn update_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(&create_base_data(table, t)));
@@ -97,13 +97,11 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<(
     upgrade_table(table, &data)
 }
 
-// This returns an actual type. Only to be used as a data manipulator. Not a `Result<()>`.
 pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Data<T> {
     let data: Data<T> = serde_json::from_str(&read_table(table).unwrap()).unwrap();
     data
 }
 
-// This returns the HashMap<String, T> of the given table. Not a `Result<()>`.
 pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> HashMap<String, T> {
     get_table(table).records
 }
@@ -112,25 +110,23 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
     get_table_records(table).remove(id).unwrap()
 }
 
-pub fn j_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
+pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
     let incoming_record: T = find(table, id);
     let json_record = serde_json::to_string(&incoming_record);
     json_record.unwrap()
 }
 
-pub fn get_j_table_records<T: Serialize + Deserialize>(table: &str) -> String {
+pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> String {
     let records: HashMap<String, T> = get_table_records(table);
     let json_records = serde_json::to_string(&records);
     json_records.unwrap()
 }
 
-pub fn get_j_table<T: Serialize + Deserialize>(table: &str) -> String {
+pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
     read_table(table).unwrap()
 }
 
-/// /////////////////////
-/// Private functions ///
-/// /////////////////////
+// Private functions ******************************************************************************
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
@@ -145,13 +141,13 @@ fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
-    let d = Data {
+    let table_data = Data {
         table: table.to_string(),
         next_id: "1".to_string(),
         records: record,
     };
 
-    d // Returns the Data<T> struct
+    table_data
 }
 
 fn create_db_dir() -> io::Result<()> {
@@ -162,9 +158,8 @@ fn create_db_dir() -> io::Result<()> {
     fs::create_dir("db")
 }
 
-/// ////////
-/// Tests //
-/// ////////
+// Tests ******************************************************************************************
+
 #[cfg(test)]
 mod tests {
     extern crate test;
@@ -206,7 +201,6 @@ mod tests {
     }
 
     #[test]
-    // This is not a benchmark - it is just to make sure this can be done correctly
     fn it_can_create_100_tables_and_drop_them_all() {
         for n in 1..101 {
             let table = format!("{}", n);
@@ -239,9 +233,9 @@ mod tests {
         create_table("test5", &a).unwrap();
         assert_eq!(a, find("test5", "0"));
 
-        let b: String = get_j_table::<sc::Coordinates>("test5");
-        let c: String = get_j_table_records::<sc::Coordinates>("test5");
-        let d: String = j_find::<sc::Coordinates>("test5", "0");
+        let b: String = json_table::<sc::Coordinates>("test5");
+        let c: String = json_table_records::<sc::Coordinates>("test5");
+        let d: String = json_find::<sc::Coordinates>("test5", "0");
 
         let j = "{\"table\":\"test5\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
         assert_eq!(j, b);
@@ -275,22 +269,22 @@ mod tests {
     }
 
     #[bench]
-    fn bench_get_j_table(b: &mut Bencher) {
-        let a = get_j_table::<sc::Coordinates>;
-        
-        b.iter(|| a("test2"));
-    }
-
-    #[bench]
-    fn bench_get_j_table_records(b: &mut Bencher) {
-        let a = get_j_table_records::<sc::Coordinates>;
+    fn bench_json_table(b: &mut Bencher) {
+        let a = json_table::<sc::Coordinates>;
 
         b.iter(|| a("test2"));
     }
 
     #[bench]
-    fn bench_get_j_find(b: &mut Bencher) {
-        let a = j_find::<sc::Coordinates>;
+    fn bench_json_table_records(b: &mut Bencher) {
+        let a = json_table_records::<sc::Coordinates>;
+
+        b.iter(|| a("test2"));
+    }
+
+    #[bench]
+    fn bench_json_find(b: &mut Bencher) {
+        let a = json_find::<sc::Coordinates>;
 
         b.iter(|| a("test2", "0"));
     }
