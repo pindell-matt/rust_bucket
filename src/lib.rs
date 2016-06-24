@@ -134,6 +134,45 @@ pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
     read_table(table).unwrap()
 }
 
+pub fn store_json(table: &str, json: &str) -> Result<()> {
+    try!(create_db_dir());
+
+    let db_table = Path::new("./db").join(table);
+
+    if db_table.exists() {
+        return Ok(());
+    }
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(json.as_bytes()));
+
+    Ok(())
+}
+
+pub fn update_json(table: &str, json: &str) -> Result<()> {
+    try!(create_db_dir());
+
+    let db_table = Path::new("./db").join(table);
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(json.as_bytes()));
+
+    Ok(())
+}
+
+pub fn read_json(table: &str, json: &str) -> Result<()> {
+    read_table(table);
+
+    Ok(())
+}
+
+pub fn delete_json(table: &str) -> Result <()> {
+    let file = Path::new("./db").join(table);
+    try!(fs::remove_file(file));
+    
+    Ok(())
+}
+
 // Private functions ******************************************************************************
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
