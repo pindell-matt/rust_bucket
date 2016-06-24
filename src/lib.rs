@@ -113,9 +113,7 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
 pub fn delete<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<()> {
     let mut current_table: HashMap<String, T> = get_table_records(table);
     current_table.remove(id);
-    update_table(table, &current_table).unwrap();
-
-    Ok(())
+    update_table(table, &current_table)
 }
 
 pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
@@ -160,10 +158,8 @@ pub fn update_json(table: &str, json: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn read_json(table: &str) -> Result<()> {
-    read_table(table).unwrap();
-
-    Ok(())
+pub fn read_json(table: &str) -> Result<(String)> {
+    read_table(table)
 }
 
 pub fn delete_json(table: &str) -> Result<()> {
