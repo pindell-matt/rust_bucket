@@ -83,6 +83,7 @@ pub fn read_table(table: &str) -> Result<String> {
 pub fn drop_table(table: &str) -> io::Result<()> {
     let t = Path::new("./db").join(table);
     try!(fs::remove_file(t));
+
     Ok(())
 }
 
@@ -119,17 +120,17 @@ pub fn delete<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<()> {
 pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
     let incoming_record: T = find(table, id);
     let json_record = serde_json::to_string(&incoming_record);
-    json_record.unwrap()
+    json_record.unwrap_or(String::from("\'failed to get table\'"))
 }
 
 pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> String {
     let records: HashMap<String, T> = get_table_records(table);
     let json_records = serde_json::to_string(&records);
-    json_records.unwrap()
+    json_records.unwrap_or(String::from("\'failed to get records\'"))
 }
 
 pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
-    read_table(table).unwrap()
+    read_table(table).unwrap_or(String::from("\'failed to get table\'"))
 }
 
 pub fn store_json(table: &str, json: &str) -> Result<()> {
