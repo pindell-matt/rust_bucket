@@ -110,6 +110,14 @@ pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
     get_table_records(table).remove(id).unwrap()
 }
 
+pub fn delete<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<()> {
+    let mut current_table: HashMap<String, T> = get_table_records(table);
+    current_table.remove(id);
+    update_table(table, &current_table).unwrap();
+
+    Ok(())
+}
+
 pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
     let incoming_record: T = find(table, id);
     let json_record = serde_json::to_string(&incoming_record);
@@ -247,6 +255,24 @@ mod tests {
         assert_eq!(l, d);
 
         drop_table("test5").unwrap();
+    }
+
+    #[test]
+    fn it_can_delete_table_data_by_id() {
+        let a = sc::Coordinates { x: 42, y: 9000 };
+
+        create_table("test6", &a).unwrap();
+
+        assert_eq!(a, find("test6", "0"));
+
+        let del = delete::<sc::Coordinates>;
+        del("test6", "0").unwrap();
+
+        let jtable = json_table::<sc::Coordinates>;
+        let table = jtable("test6");
+        assert_eq!(table, "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
+
+        drop_table("test6").unwrap();
     }
 
     #[bench]
