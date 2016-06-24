@@ -160,16 +160,16 @@ pub fn update_json(table: &str, json: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn read_json(table: &str, json: &str) -> Result<()> {
-    read_table(table);
+pub fn read_json(table: &str) -> Result<()> {
+    read_table(table).unwrap();
 
     Ok(())
 }
 
-pub fn delete_json(table: &str) -> Result <()> {
+pub fn delete_json(table: &str) -> Result<()> {
     let file = Path::new("./db").join(table);
     try!(fs::remove_file(file));
-    
+
     Ok(())
 }
 
@@ -309,7 +309,8 @@ mod tests {
 
         let jtable = json_table::<sc::Coordinates>;
         let table = jtable("test6");
-        assert_eq!(table, "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
+        assert_eq!(table,
+                   "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
 
         drop_table("test6").unwrap();
     }
@@ -358,5 +359,14 @@ mod tests {
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
         b.iter(|| a("test2", "0"));
+    }
+
+    #[bench]
+    fn bench_store_update_read_and_delete_json(b: &mut Bencher) {
+        b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
+
+        update_json("test7", "{\"x\":45,\"y\":9876}}}").unwrap();
+        read_json("test7").unwrap();
+        delete_json("test7").unwrap();
     }
 }
