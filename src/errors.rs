@@ -17,7 +17,7 @@ use std::fmt::{self, Display, Formatter};
 use serde_json;
 
 // Bring the constructors of Error into scope so we can use them without an `Error::` incantation
-use self::Error::{Io, Serde, NoSuchTable};
+use self::Error::{Io, Serde, NoSuchTable, NoSuchKey};
 
 /// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
 pub type Result<T> = std_result::Result<T, Error>;
@@ -35,7 +35,10 @@ pub enum Error {
     Serde(serde_json::Error),
 
     /// The user tried to read a table, but no such table exists.
-    NoSuchTable(String)
+    NoSuchTable(String),
+
+    /// The user tried to extract a key, but it didn't exist.
+    NoSuchKey
 }
 
 impl From<io::Error> for Error {
@@ -62,7 +65,8 @@ impl Display for Error {
                 e.fmt(f)
             },
             NoSuchTable(ref t) =>
-                write!(f, "Tried to open the table \"{}\", which does not exist.", t)
+                write!(f, "Tried to open the table \"{}\", which does not exist.", t),
+            NoSuchKey => write!(f, "Tried to retrieve a key which doesn't exist.")
         }
     }
 }
@@ -72,7 +76,8 @@ impl std_error::Error for Error {
         match *self {
             Io(ref e)      => e.description(),
             Serde(ref e)   => e.description(),
-            NoSuchTable(_) => "Tried to open a table that doesn't exist"
+            NoSuchTable(_) => "Tried to open a table that doesn't exist",
+            NoSuchKey => "Tried to retrieve a key which doesn't exist"
         }
     }
 
@@ -80,7 +85,8 @@ impl std_error::Error for Error {
         match *self {
             Io(ref e)      => Some(e),
             Serde(ref e)   => Some(e),
-            NoSuchTable(_) => None
+            NoSuchTable(_) => None,
+            NoSuchKey => None
         }
     }
 }

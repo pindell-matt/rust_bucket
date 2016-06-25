@@ -88,7 +88,7 @@ pub fn drop_table(table: &str) -> io::Result<()> {
 }
 
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
-    let mut data = get_table(table);
+    let mut data = try!(get_table(table));
     let increased_next_id = data.next_id.parse::<i32>().unwrap();
     let new_id = increased_next_id + 1;
 
@@ -98,35 +98,32 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<(
     upgrade_table(table, &data)
 }
 
-pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Data<T> {
-    let data: Data<T> = serde_json::from_str(&read_table(table).unwrap()).unwrap();
-    data
+pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Result<Data<T>> {
+    serde_json::from_str(&try!(read_table(table))).map_err(Error::from)
 }
 
-pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> HashMap<String, T> {
-    get_table(table).records
+pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> Result<HashMap<String, T>> {
+    Ok(try!(get_table(table)).records)
 }
 
-pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
-    get_table_records(table).remove(id).unwrap()
+pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<T> {
+    try!(get_table_records(table)).remove(id).ok_or(Error::NoSuchKey)
 }
 
 pub fn delete<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<()> {
-    let mut current_table: HashMap<String, T> = get_table_records(table);
+    let mut current_table: HashMap<String, T> = try!(get_table_records(table));
     current_table.remove(id);
     update_table(table, &current_table)
 }
 
-pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
-    let incoming_record: T = find(table, id);
-    let json_record = serde_json::to_string(&incoming_record);
-    json_record.unwrap_or(String::from("\'failed to get table\'"))
+pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<String> {
+    let incoming_record: T = try!(find(table, id));
+    serde_json::to_string(&incoming_record).map_err(Error::from)
 }
 
-pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> String {
-    let records: HashMap<String, T> = get_table_records(table);
-    let json_records = serde_json::to_string(&records);
-    json_records.unwrap_or(String::from("\'failed to get records\'"))
+pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> Result<String> {
+    let records: HashMap<String, T> = try!(get_table_records(table));
+    serde_json::to_string(&records).map_err(Error::from)
 }
 
 pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
@@ -266,7 +263,7 @@ mod tests {
 
         create_table("test3", &a).unwrap();
 
-        assert_eq!(a, find("test3", "0"));
+        assert_eq!(a, find("test3", "0").unwrap());
 
         drop_table("test3").unwrap();
     }
@@ -275,11 +272,11 @@ mod tests {
     fn it_can_return_json() {
         let a = sc::Coordinates { x: 42, y: 9000 };
         create_table("test5", &a).unwrap();
-        assert_eq!(a, find("test5", "0"));
+        assert_eq!(a, find("test5", "0").unwrap());
 
         let b: String = json_table::<sc::Coordinates>("test5");
-        let c: String = json_table_records::<sc::Coordinates>("test5");
-        let d: String = json_find::<sc::Coordinates>("test5", "0");
+        let c: String = json_table_records::<sc::Coordinates>("test5").unwrap();
+        let d: String = json_find::<sc::Coordinates>("test5", "0").unwrap();
 
         let j = "{\"table\":\"test5\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
         assert_eq!(j, b);
@@ -299,7 +296,7 @@ mod tests {
 
         create_table("test6", &a).unwrap();
 
-        assert_eq!(a, find("test6", "0"));
+        assert_eq!(a, find("test6", "0").unwrap());
 
         let del = delete::<sc::Coordinates>;
         del("test6", "0").unwrap();
