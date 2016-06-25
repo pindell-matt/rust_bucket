@@ -332,27 +332,27 @@ mod tests {
     fn bench_json_table(b: &mut Bencher) {
         let a = json_table::<sc::Coordinates>;
 
-        b.iter(|| a("test2"));
+        b.iter(|| a("test2").unwrap());
     }
 
     #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
 
-        b.iter(|| a("test2"));
+        b.iter(|| a("test2").unwrap());
     }
 
     #[bench]
     fn bench_json_find(b: &mut Bencher) {
         let a = json_find::<sc::Coordinates>;
 
-        b.iter(|| a("test2", "0"));
+        b.iter(|| a("test2", "0").unwrap());
     }
 
     #[bench]
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
-        b.iter(|| a("test2", "0"));
+        b.iter(|| a("test2", "0").unwrap());
     }
 
     #[bench]
