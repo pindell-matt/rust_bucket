@@ -89,7 +89,7 @@ pub fn drop_table(table: &str) -> io::Result<()> {
 
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
     let mut data = try!(get_table(table));
-    let increased_next_id = data.next_id.parse::<i32>().unwrap();
+    let increased_next_id = try!(data.next_id.parse::<i32>());
     let new_id = increased_next_id + 1;
 
     data.records.insert(increased_next_id.to_string(), t);

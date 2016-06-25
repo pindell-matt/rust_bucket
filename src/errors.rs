@@ -13,16 +13,17 @@ use std::error as std_error;
 use std::result as std_result;
 use std::io;
 use std::fmt::{self, Display, Formatter};
+use std::num::ParseIntError;
 
 use serde_json;
 
 // Bring the constructors of Error into scope so we can use them without an `Error::` incantation
-use self::Error::{Io, Serde, NoSuchTable, NoSuchKey};
+use self::Error::{Io, Serde, ParseInt, NoSuchTable, NoSuchKey};
 
 /// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
 pub type Result<T> = std_result::Result<T, Error>;
 
-/// Errors that can occur during `fe_bucket` operations
+/// Errors that can occur during `rust_bucket` operations
 #[derive(Debug)]
 pub enum Error {
     /// Something went wrong internally while trying to perform IO.
@@ -33,6 +34,13 @@ pub enum Error {
     /// `serde_json` makes no type-level distinction between serialization and deserialization
     /// errors, so we inherit that silliness.
     Serde(serde_json::Error),
+
+    /// The stored `next_id` failed to parse.
+    ///
+    /// The `next_id` of a serialized table is an ASCII-encoded integer,
+    /// which we failed to parse as an integer on reading it back in.
+    /// This most likely indicates some kind of corruption.
+    ParseInt(ParseIntError),
 
     /// The user tried to read a table, but no such table exists.
     NoSuchTable(String),
@@ -53,6 +61,12 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+impl From<ParseIntError> for Error {
+    fn from(e: ParseIntError) -> Error {
+        ParseInt(e)
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> std_result::Result<(), fmt::Error> {
         match *self {
@@ -62,6 +76,10 @@ impl Display for Error {
             },
             Serde(ref e) => {
                 try!(write!(f, "Error (de)serializing: "));
+                e.fmt(f)
+            },
+            ParseInt(ref e) => {
+                try!(write!(f, "Error parsing an integer: "));
                 e.fmt(f)
             },
             NoSuchTable(ref t) =>
@@ -76,6 +94,7 @@ impl std_error::Error for Error {
         match *self {
             Io(ref e)      => e.description(),
             Serde(ref e)   => e.description(),
+            ParseInt(ref e) => e.description(),
             NoSuchTable(_) => "Tried to open a table that doesn't exist",
             NoSuchKey => "Tried to retrieve a key which doesn't exist"
         }
@@ -85,6 +104,7 @@ impl std_error::Error for Error {
         match *self {
             Io(ref e)      => Some(e),
             Serde(ref e)   => Some(e),
+            ParseInt(ref e) => Some(e),
             NoSuchTable(_) => None,
             NoSuchKey => None
         }
