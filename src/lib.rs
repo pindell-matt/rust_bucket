@@ -274,7 +274,7 @@ mod tests {
         create_table("test5", &a).unwrap();
         assert_eq!(a, find("test5", "0").unwrap());
 
-        let b: String = json_table::<sc::Coordinates>("test5");
+        let b: String = json_table::<sc::Coordinates>("test5").unwrap();
         let c: String = json_table_records::<sc::Coordinates>("test5").unwrap();
         let d: String = json_find::<sc::Coordinates>("test5", "0").unwrap();
 
@@ -302,7 +302,7 @@ mod tests {
         del("test6", "0").unwrap();
 
         let jtable = json_table::<sc::Coordinates>;
-        let table = jtable("test6");
+        let table = jtable("test6").unwrap();
         assert_eq!(table,
                    "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
 
