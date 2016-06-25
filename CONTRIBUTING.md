@@ -14,7 +14,7 @@
 
 But to save Travis CI from building everytime, here is a Vagrantfile that you should setup!
 
-**Please change the `<PATH_TO_YOUR_LOCAL_FE_BUCKET_FORK_OR_PROJECT>` to your local project path!**
+**Please change the `<PATH_TO_YOUR_LOCAL_RUST_BUCKET_FORK_OR_PROJECT>` to your local project path!**
 
 ```
 $script = <<SCRIPT
@@ -22,13 +22,13 @@ $script = <<SCRIPT
   sudo /usr/sbin/update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
   sudo apt-get install git -y
   sudo curl -s https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
-  cd /home/vagrant/fe_bucket && cargo test && cargo bench
+  cd /home/vagrant/rust_bucket && cargo test && cargo bench
 SCRIPT
 
 Vagrant.configure(2) do |config|
   config.vm.box = "ubuntu/trusty64"
   config.vm.provision :shell, :inline => $script
-  config.vm.synced_folder "<PATH_TO_YOUR_LOCAL_FE_BUCKET_FORK_OR_PROJECT>", "/home/vagrant/fe_bucket"
+  config.vm.synced_folder "<PATH_TO_YOUR_LOCAL_FE_BUCKET_FORK_OR_PROJECT>", "/home/vagrant/rust_bucket"
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "1024"
   end

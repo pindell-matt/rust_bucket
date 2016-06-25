@@ -1,4 +1,4 @@
-// Copyright 2016 The Fe_Bucket Project Developers. See the COPYRIGHT file at
+// Copyright 2016 The Rust_Bucket Project Developers. See the COPYRIGHT file at
 // the top-level directory of this distribution.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -20,7 +20,7 @@ use serde_json;
 // Bring the constructors of Error into scope so we can use them without an `Error::` incantation
 use self::Error::{Io, Serde, ParseInt, NoSuchTable, NoSuchKey};
 
-/// A Result alias often returned from methods that can fail for `fe_bucket` exclusive reasons.
+/// A Result alias often returned from methods that can fail for `rust_bucket` exclusive reasons.
 pub type Result<T> = std_result::Result<T, Error>;
 
 /// Errors that can occur during `rust_bucket` operations
@@ -46,7 +46,7 @@ pub enum Error {
     NoSuchTable(String),
 
     /// The user tried to extract a key, but it didn't exist.
-    NoSuchKey
+    NoSuchKey,
 }
 
 impl From<io::Error> for Error {
@@ -73,18 +73,21 @@ impl Display for Error {
             Io(ref e) => {
                 try!(write!(f, "Error performing IO: "));
                 e.fmt(f)
-            },
+            }
             Serde(ref e) => {
                 try!(write!(f, "Error (de)serializing: "));
                 e.fmt(f)
-            },
+            }
             ParseInt(ref e) => {
                 try!(write!(f, "Error parsing an integer: "));
                 e.fmt(f)
-            },
-            NoSuchTable(ref t) =>
-                write!(f, "Tried to open the table \"{}\", which does not exist.", t),
-            NoSuchKey => write!(f, "Tried to retrieve a key which doesn't exist.")
+            }
+            NoSuchTable(ref t) => {
+                write!(f,
+                       "Tried to open the table \"{}\", which does not exist.",
+                       t)
+            }
+            NoSuchKey => write!(f, "Tried to retrieve a key which doesn't exist."),
         }
     }
 }
@@ -92,21 +95,21 @@ impl Display for Error {
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Io(ref e)      => e.description(),
-            Serde(ref e)   => e.description(),
+            Io(ref e) => e.description(),
+            Serde(ref e) => e.description(),
             ParseInt(ref e) => e.description(),
             NoSuchTable(_) => "Tried to open a table that doesn't exist",
-            NoSuchKey => "Tried to retrieve a key which doesn't exist"
+            NoSuchKey => "Tried to retrieve a key which doesn't exist",
         }
     }
 
     fn cause(&self) -> Option<&std_error::Error> {
         match *self {
-            Io(ref e)      => Some(e),
-            Serde(ref e)   => Some(e),
+            Io(ref e) => Some(e),
+            Serde(ref e) => Some(e),
             ParseInt(ref e) => Some(e),
             NoSuchTable(_) => None,
-            NoSuchKey => None
+            NoSuchKey => None,
         }
     }
 }

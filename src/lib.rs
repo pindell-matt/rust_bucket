@@ -1,4 +1,4 @@
-// Copyright 2016 The Fe_Bucket Project Developers. See the COPYRIGHT file at
+// Copyright 2016 The Rust_Bucket Project Developers. See the COPYRIGHT file at
 // the top-level directory of this distribution.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
