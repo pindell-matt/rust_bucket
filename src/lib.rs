@@ -126,8 +126,8 @@ pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> Result<Str
     serde_json::to_string(&records).map_err(Error::from)
 }
 
-pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
-    read_table(table).unwrap_or(String::from("\'failed to get table\'"))
+pub fn json_table<T: Serialize + Deserialize>(table: &str) -> Result<String> {
+    read_table(table).map_err(Error::from)
 }
 
 pub fn store_json(table: &str, json: &str) -> Result<()> {
