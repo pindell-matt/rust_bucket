@@ -7,9 +7,7 @@
 // file may not be copied, modified, or distributed except according to those
 // terms.
 
-#![feature(custom_derive, plugin)]
-#![cfg_attr(test, feature(test))]
-#![plugin(serde_macros)]
+#![cfg_attr(all(test, feature = "benchmarks"), feature(test))]
 
 extern crate serde_json;
 extern crate serde;
@@ -18,9 +16,11 @@ use std::io;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
-use serde::Deserialize;
+use std::marker::PhantomData;
+use serde::de::{self, Deserialize, Deserializer};
 use std::io::prelude::*;
-use serde::ser::Serialize;
+use std::result::Result as StdResult;
+use serde::ser::{self, Serialize, Serializer};
 use std::collections::HashMap;
 
 // sc is the user defined schema
@@ -30,15 +30,143 @@ pub mod errors;
 use errors::{Result, Error};
 
 /// The table structure.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Data<T: Serialize> {
+#[derive(PartialEq, Debug)]
+pub struct Data<T> {
     pub table: String,
     pub next_id: String,
     pub records: HashMap<String, T>,
 }
 
-// Public functions *******************************************************************************
+/// Fields of the `Data` type; support for deserialization.
+#[derive(Debug)]
+enum DataField {
+    Table,
+    NextId,
+    Records
+}
 
+/// Fields of the `Data` type, as strings; support for deserialization
+const DATA_FIELDS: &'static [&'static str] = &["table", "next_id", "records"];
+
+/// Visit the various fields of `Data`, to serialize them.
+#[derive(Debug)]
+struct DataSeVisitor<'a, T: 'a> {
+    data: &'a Data<T>,
+    field: usize
+}
+
+impl<'a, T> DataSeVisitor<'a, T> {
+    fn new(data: &'a Data<T>) -> DataSeVisitor<'a, T> {
+        DataSeVisitor { data: data, field: 0 }
+    }
+}
+
+impl<'a, T: Serialize> ser::MapVisitor for DataSeVisitor<'a, T>
+{
+    fn visit<S: Serializer>(&mut self, serializer: &mut S) -> StdResult<Option<()>, S::Error> {
+        match self.field {
+            0 => {
+                try!(serializer.serialize_struct_elt("table", &self.data.table[..]));
+                self.field += 1;
+                Ok(Some(()))
+            },
+            1 => {
+                try!(serializer.serialize_struct_elt("next_id", &self.data.next_id[..]));
+                self.field += 1;
+                Ok(Some(()))
+            },
+            2 => {
+                try!(serializer.serialize_struct_elt("records", &self.data.records));
+                self.field += 1;
+                Ok(None)
+            },
+            _ => unreachable!()
+        }
+    }
+}
+
+impl<T: Serialize> Serialize for Data<T> {
+    fn serialize<S: Serializer>(&self, serializer: &mut S) -> StdResult<(), S::Error> {
+        serializer.serialize_struct("Data", DataSeVisitor::new(self))
+    }
+}
+
+/// Marker struct for visiting data fields
+struct DataFieldVisitor;
+
+impl de::Visitor for DataFieldVisitor {
+    type Value = DataField;
+
+    fn visit_str<E: de::Error>(&mut self, value: &str) -> StdResult<DataField, E> {
+        match value {
+            "table" => Ok(DataField::Table),
+            "next_id" => Ok(DataField::NextId),
+            "records" => Ok(DataField::Records),
+            _ => Err(de::Error::custom("Expected table, next_id, or records"))
+        }
+    }
+}
+
+impl Deserialize for DataField {
+    fn deserialize<D: Deserializer>(deserializer: &mut D) -> StdResult<DataField, D::Error> {
+        deserializer.deserialize(DataFieldVisitor)
+    }
+}
+
+/// Marker struct for deserialization
+struct DataDeVisitor<T>{
+    _spook: PhantomData<T>
+}
+
+impl<T: Deserialize> de::Visitor for DataDeVisitor<T> {
+    type Value = Data<T>;
+
+    fn visit_map<V: de::MapVisitor>(&mut self, mut visitor: V) -> StdResult<Data<T>, V::Error> {
+        let mut table = None;
+        let mut next = None;
+        let mut records = None;
+
+        loop {
+            match try!(visitor.visit_key()) {
+                Some(DataField::Table) => {
+                    table = Some(try!(visitor.visit_value()));
+                },
+                Some(DataField::NextId) => {
+                    next = Some(try!(visitor.visit_value()));
+                },
+                Some(DataField::Records) => {
+                    records = Some(try!(visitor.visit_value()));
+                },
+                None => { break; }
+            }
+        }
+
+        let table = match table {
+            Some(t) => t,
+            None => { return visitor.missing_field("table"); }
+        };
+        let next = match next {
+            Some(n) => n,
+            None => { return visitor.missing_field("next_id"); }
+        };
+        let records = match records {
+            Some(r) => r,
+            None => { return visitor.missing_field("records"); }
+        };
+
+        try!(visitor.end());
+
+        Ok(Data { table: table, next_id: next, records: records })
+    }
+}
+
+impl<T: Deserialize> Deserialize for Data<T> {
+    fn deserialize<D: Deserializer>(deserializer: &mut D) -> StdResult<Data<T>, D::Error> {
+        deserializer.deserialize_struct("Data", DATA_FIELDS, DataDeVisitor { _spook: PhantomData })
+    }
+}
+
+// Public functions *******************************************************************************
 pub fn update_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(&create_base_data(table, t)));
     let db_table = Path::new("./db").join(table);
@@ -203,13 +331,58 @@ fn create_db_dir() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "benchmarks")]
     extern crate test;
-    extern crate serde;
 
+    #[cfg(feature = "benchmarks")]
     use self::test::Bencher;
 
     use super::*;
     use sc;
+
+    use std::collections::HashMap;
+    use serde_json;
+
+    #[test]
+    fn serialization_works() {
+        let mut rec = HashMap::new();
+        rec.insert("0".to_owned(), sc::Coordinates{x: 42, y: 43});
+
+        let data = Data {
+            table: "test".to_owned(),
+            next_id: "1".to_owned(),
+            records: rec
+        };
+
+        let expected = r#"{"table":"test","next_id":"1","records":{"0":{"x":42,"y":43}}}"#;
+
+        assert_eq!(expected, serde_json::to_string(&data).unwrap());
+    }
+
+    #[test]
+    fn deserialization_works() {
+        let source = r#"{
+  "table": "test",
+  "next_id": "1",
+  "records": {
+    "0": {
+      "x": 42,
+      "y": 43
+    }
+  }
+}"#;
+
+        let mut rec = HashMap::new();
+        rec.insert("0".to_owned(), sc::Coordinates{x: 42, y: 43});
+
+        let expected = Data {
+            table: "test".to_owned(),
+            next_id: "1".to_owned(),
+            records: rec
+        };
+
+        assert_eq!(expected, serde_json::from_str(source).unwrap());
+    }
 
     #[test]
     fn it_can_create_update_and_drop_a_table_and_take_any_struct_to_add_data() {
@@ -309,6 +482,7 @@ mod tests {
         drop_table("test6").unwrap();
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_create_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -316,6 +490,7 @@ mod tests {
         b.iter(|| create_table("test4", &object).unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -323,11 +498,13 @@ mod tests {
         b.iter(|| update_table("test2", &object).unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_read_table(b: &mut Bencher) {
         b.iter(|| read_table("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table(b: &mut Bencher) {
         let a = json_table::<sc::Coordinates>;
@@ -335,6 +512,7 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
@@ -342,6 +520,7 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_find(b: &mut Bencher) {
         let a = json_find::<sc::Coordinates>;
@@ -349,12 +528,14 @@ mod tests {
         b.iter(|| a("test2", "0").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
         b.iter(|| a("test2", "0").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_store_update_read_and_delete_json(b: &mut Bencher) {
         b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
