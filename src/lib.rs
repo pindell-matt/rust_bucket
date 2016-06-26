@@ -1,4 +1,4 @@
-// Copyright 2016 The Fe_Bucket Project Developers. See the COPYRIGHT file at
+// Copyright 2016 The Rust_Bucket Project Developers. See the COPYRIGHT file at
 // the top-level directory of this distribution.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -83,12 +83,13 @@ pub fn read_table(table: &str) -> Result<String> {
 pub fn drop_table(table: &str) -> io::Result<()> {
     let t = Path::new("./db").join(table);
     try!(fs::remove_file(t));
+
     Ok(())
 }
 
 pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<()> {
-    let mut data = get_table(table);
-    let increased_next_id = data.next_id.parse::<i32>().unwrap();
+    let mut data = try!(get_table(table));
+    let increased_next_id = try!(data.next_id.parse::<i32>());
     let new_id = increased_next_id + 1;
 
     data.records.insert(increased_next_id.to_string(), t);
@@ -97,41 +98,73 @@ pub fn append_records<T: Serialize + Deserialize>(table: &str, t: T) -> Result<(
     upgrade_table(table, &data)
 }
 
-pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Data<T> {
-    let data: Data<T> = serde_json::from_str(&read_table(table).unwrap()).unwrap();
-    data
+pub fn get_table<T: Serialize + Deserialize>(table: &str) -> Result<Data<T>> {
+    serde_json::from_str(&try!(read_table(table))).map_err(Error::from)
 }
 
-pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> HashMap<String, T> {
-    get_table(table).records
+pub fn get_table_records<T: Serialize + Deserialize>(table: &str) -> Result<HashMap<String, T>> {
+    Ok(try!(get_table(table)).records)
 }
 
-pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> T {
-    get_table_records(table).remove(id).unwrap()
+pub fn find<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<T> {
+    try!(get_table_records(table)).remove(id).ok_or(Error::NoSuchKey)
 }
 
 pub fn delete<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<()> {
-    let mut current_table: HashMap<String, T> = get_table_records(table);
+    let mut current_table: HashMap<String, T> = try!(get_table_records(table));
     current_table.remove(id);
-    update_table(table, &current_table).unwrap();
+    update_table(table, &current_table)
+}
+
+pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> Result<String> {
+    let incoming_record: T = try!(find(table, id));
+    serde_json::to_string(&incoming_record).map_err(Error::from)
+}
+
+pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> Result<String> {
+    let records: HashMap<String, T> = try!(get_table_records(table));
+    serde_json::to_string(&records).map_err(Error::from)
+}
+
+pub fn json_table<T: Serialize + Deserialize>(table: &str) -> Result<String> {
+    read_table(table).map_err(Error::from)
+}
+
+pub fn store_json(table: &str, json: &str) -> Result<()> {
+    try!(create_db_dir());
+
+    let db_table = Path::new("./db").join(table);
+
+    if db_table.exists() {
+        return Ok(());
+    }
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(json.as_bytes()));
 
     Ok(())
 }
 
-pub fn json_find<T: Serialize + Deserialize>(table: &str, id: &str) -> String {
-    let incoming_record: T = find(table, id);
-    let json_record = serde_json::to_string(&incoming_record);
-    json_record.unwrap()
+pub fn update_json(table: &str, json: &str) -> Result<()> {
+    try!(create_db_dir());
+
+    let db_table = Path::new("./db").join(table);
+
+    let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(json.as_bytes()));
+
+    Ok(())
 }
 
-pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> String {
-    let records: HashMap<String, T> = get_table_records(table);
-    let json_records = serde_json::to_string(&records);
-    json_records.unwrap()
+pub fn read_json(table: &str) -> Result<(String)> {
+    read_table(table)
 }
 
-pub fn json_table<T: Serialize + Deserialize>(table: &str) -> String {
-    read_table(table).unwrap()
+pub fn delete_json(table: &str) -> Result<()> {
+    let file = Path::new("./db").join(table);
+    try!(fs::remove_file(file));
+
+    Ok(())
 }
 
 // Private functions ******************************************************************************
@@ -230,7 +263,7 @@ mod tests {
 
         create_table("test3", &a).unwrap();
 
-        assert_eq!(a, find("test3", "0"));
+        assert_eq!(a, find("test3", "0").unwrap());
 
         drop_table("test3").unwrap();
     }
@@ -239,11 +272,11 @@ mod tests {
     fn it_can_return_json() {
         let a = sc::Coordinates { x: 42, y: 9000 };
         create_table("test5", &a).unwrap();
-        assert_eq!(a, find("test5", "0"));
+        assert_eq!(a, find("test5", "0").unwrap());
 
-        let b: String = json_table::<sc::Coordinates>("test5");
-        let c: String = json_table_records::<sc::Coordinates>("test5");
-        let d: String = json_find::<sc::Coordinates>("test5", "0");
+        let b: String = json_table::<sc::Coordinates>("test5").unwrap();
+        let c: String = json_table_records::<sc::Coordinates>("test5").unwrap();
+        let d: String = json_find::<sc::Coordinates>("test5", "0").unwrap();
 
         let j = "{\"table\":\"test5\",\"next_id\":\"1\",\"records\":{\"0\":{\"x\":42,\"y\":9000}}}";
         assert_eq!(j, b);
@@ -263,14 +296,15 @@ mod tests {
 
         create_table("test6", &a).unwrap();
 
-        assert_eq!(a, find("test6", "0"));
+        assert_eq!(a, find("test6", "0").unwrap());
 
         let del = delete::<sc::Coordinates>;
         del("test6", "0").unwrap();
 
         let jtable = json_table::<sc::Coordinates>;
-        let table = jtable("test6");
-        assert_eq!(table, "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
+        let table = jtable("test6").unwrap();
+        assert_eq!(table,
+                   "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
 
         drop_table("test6").unwrap();
     }
@@ -298,26 +332,35 @@ mod tests {
     fn bench_json_table(b: &mut Bencher) {
         let a = json_table::<sc::Coordinates>;
 
-        b.iter(|| a("test2"));
+        b.iter(|| a("test2").unwrap());
     }
 
     #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
 
-        b.iter(|| a("test2"));
+        b.iter(|| a("test2").unwrap());
     }
 
     #[bench]
     fn bench_json_find(b: &mut Bencher) {
         let a = json_find::<sc::Coordinates>;
 
-        b.iter(|| a("test2", "0"));
+        b.iter(|| a("test2", "0").unwrap());
     }
 
     #[bench]
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
-        b.iter(|| a("test2", "0"));
+        b.iter(|| a("test2", "0").unwrap());
+    }
+
+    #[bench]
+    fn bench_store_update_read_and_delete_json(b: &mut Bencher) {
+        b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
+
+        update_json("test7", "{\"x\":45,\"y\":9876}}}").unwrap();
+        read_json("test7").unwrap();
+        delete_json("test7").unwrap();
     }
 }

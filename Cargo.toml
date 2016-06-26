@@ -1,7 +1,7 @@
 [package]
-name = "fe_bucket"
+name = "rust_bucket"
 version = "0.1.0"
-authors = ["Matt Pindell <pindell.m@gmail.com>", "Regis Boudinot <boudinot.regis@yahoo.com>"]
+authors = ["Matt Pindell <pindell.m@gmail.com>", "Regis Boudinot <boudinot.regis@yahoo.com>", "Alex Hill <alexander.d.hill.89@gmail.com>"]
 
 [dependencies]
 serde = "*"
