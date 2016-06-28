@@ -167,6 +167,7 @@ pub fn delete_json(table: &str) -> Result<()> {
     Ok(())
 }
 
+#[allow(unused_variables)]
 pub fn where_record<T: Serialize + Deserialize, F>(table: &str, mut clo: F) -> Result<Vec<T>>
     where F: FnMut(&T) -> bool
 {
