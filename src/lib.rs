@@ -167,11 +167,22 @@ pub fn delete_json(table: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn where_record<T: Serialize + Deserialize, F>(table: &str, mut clo: F) -> Result<Vec<T>>
+    where F: FnMut(&T) -> bool
+{
+    let records = try!(get_table_records(table));
+
+    let results = records.into_iter().map(|(k, v)| v).filter(|v| clo(v)).collect();
+
+    Ok(results)
+}
+
 // Private functions ******************************************************************************
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
     let db_table = Path::new("./db").join(table);
+
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
 
