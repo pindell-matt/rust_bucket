@@ -1,4 +1,4 @@
-// Copyright 2016 The Fe_Bucket Project Developers. See the COPYRIGHT file at
+// Copyright 2016 The Rust_Bucket Project Developers. See the COPYRIGHT file at
 // the top-level directory of this distribution.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
@@ -7,4 +7,12 @@
 // file may not be copied, modified, or distributed except according to those
 // terms.
 
-include!(concat!(env!("OUT_DIR"), "/sc/mod.rs"));
+// This file is but fodder for serde_codegen, to derive our instances
+
+/// The table structure.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Data<T: Serialize> {
+    pub table: String,
+    pub next_id: String,
+    pub records: HashMap<String, T>,
+}

@@ -7,4 +7,8 @@
 // file may not be copied, modified, or distributed except according to those
 // terms.
 
-include!(concat!(env!("OUT_DIR"), "/sc/mod.rs"));
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Coordinates {
+    pub x: i32,
+    pub y: i32,
+}
