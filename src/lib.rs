@@ -312,13 +312,6 @@ mod benchmarks {
     }
 
     #[bench]
-    fn bench_json_table(b: &mut Bencher) {
-        let a = json_table::<sc::Coordinates>;
-
-        b.iter(|| a("test2").unwrap());
-    }
-
-    #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
 
