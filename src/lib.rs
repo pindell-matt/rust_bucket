@@ -161,13 +161,11 @@ fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
-    let table_data = Data {
+    Data {
         table: table.to_string(),
         next_id: "1".to_string(),
         records: record,
-    };
-
-    table_data
+    }
 }
 
 fn create_db_dir() -> io::Result<()> {
