@@ -119,10 +119,6 @@ pub fn json_table_records<T: Serialize + Deserialize>(table: &str) -> Result<Str
     serde_json::to_string(&records).map_err(Error::from)
 }
 
-pub fn json_table<T: Serialize + Deserialize>(table: &str) -> Result<String> {
-    read_table(table).map_err(Error::from)
-}
-
 pub fn store_json(table: &str, json: &str) -> Result<()> {
     try!(create_db_dir());
 
@@ -149,22 +145,12 @@ pub fn update_json(table: &str, json: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn read_json(table: &str) -> Result<(String)> {
-    read_table(table)
-}
-
-pub fn delete_json(table: &str) -> Result<()> {
-    let file = Path::new("./db").join(table);
-    try!(fs::remove_file(file));
-
-    Ok(())
-}
-
 // Private functions ******************************************************************************
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
     let db_table = Path::new("./db").join(table);
+
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
 
@@ -175,13 +161,11 @@ fn create_base_data<T: Serialize>(table: &str, t: T) -> Data<T> {
     let mut record = HashMap::new();
     record.insert("0".to_string(), t);
 
-    let table_data = Data {
+    Data {
         table: table.to_string(),
         next_id: "1".to_string(),
         records: record,
-    };
-
-    table_data
+    }
 }
 
 fn create_db_dir() -> io::Result<()> {
@@ -262,7 +246,7 @@ mod tests {
         create_table("test5", &a).unwrap();
         assert_eq!(a, find("test5", "0").unwrap());
 
-        let b: String = json_table::<sc::Coordinates>("test5").unwrap();
+        let b: String = read_table("test5").unwrap();
         let c: String = json_table_records::<sc::Coordinates>("test5").unwrap();
         let d: String = json_find::<sc::Coordinates>("test5", "0").unwrap();
 
@@ -289,14 +273,12 @@ mod tests {
         let del = delete::<sc::Coordinates>;
         del("test6", "0").unwrap();
 
-        let jtable = json_table::<sc::Coordinates>;
-        let table = jtable("test6").unwrap();
+        let table = read_table("test6").unwrap();
         assert_eq!(table,
                    "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
 
         drop_table("test6").unwrap();
     }
-
 }
 
 #[cfg(all(feature = "benchmarks", test))]
@@ -328,13 +310,6 @@ mod benchmarks {
     }
 
     #[bench]
-    fn bench_json_table(b: &mut Bencher) {
-        let a = json_table::<sc::Coordinates>;
-
-        b.iter(|| a("test2").unwrap());
-    }
-
-    #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
 
@@ -359,7 +334,7 @@ mod benchmarks {
         b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
 
         update_json("test7", "{\"x\":45,\"y\":9876}}}").unwrap();
-        read_json("test7").unwrap();
-        delete_json("test7").unwrap();
+        read_table("test7").unwrap();
+        drop_table("test7").unwrap();
     }
 }
