@@ -7,9 +7,7 @@
 // file may not be copied, modified, or distributed except according to those
 // terms.
 
-#![feature(custom_derive, plugin)]
-#![cfg_attr(test, feature(test))]
-#![plugin(serde_macros)]
+#![cfg_attr(all(test, feature = "benchmarks"), feature(test))]
 
 extern crate serde_json;
 extern crate serde;
@@ -29,13 +27,8 @@ mod sc;
 pub mod errors;
 use errors::{Result, Error};
 
-/// The table structure.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Data<T: Serialize> {
-    pub table: String,
-    pub next_id: String,
-    pub records: HashMap<String, T>,
-}
+// Build-script-generated instances for the Data type
+include!(concat!(env!("OUT_DIR"), "/data.rs"));
 
 // Public functions *******************************************************************************
 
@@ -203,9 +196,10 @@ fn create_db_dir() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "benchmarks")]
     extern crate test;
-    extern crate serde;
 
+    #[cfg(feature = "benchmarks")]
     use self::test::Bencher;
 
     use super::*;
@@ -309,6 +303,7 @@ mod tests {
         drop_table("test6").unwrap();
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_create_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -316,6 +311,7 @@ mod tests {
         b.iter(|| create_table("test4", &object).unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -323,11 +319,13 @@ mod tests {
         b.iter(|| update_table("test2", &object).unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_read_table(b: &mut Bencher) {
         b.iter(|| read_table("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table(b: &mut Bencher) {
         let a = json_table::<sc::Coordinates>;
@@ -335,6 +333,7 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
@@ -342,6 +341,7 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_find(b: &mut Bencher) {
         let a = json_find::<sc::Coordinates>;
@@ -349,12 +349,14 @@ mod tests {
         b.iter(|| a("test2", "0").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
         b.iter(|| a("test2", "0").unwrap());
     }
 
+    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_store_update_read_and_delete_json(b: &mut Bencher) {
         b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
