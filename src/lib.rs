@@ -145,18 +145,12 @@ pub fn update_json(table: &str, json: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn delete_json(table: &str) -> Result<()> {
-    let file = Path::new("./db").join(table);
-    try!(fs::remove_file(file));
-
-    Ok(())
-}
-
 // Private functions ******************************************************************************
 
 fn upgrade_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     let serialized = try!(serde_json::to_string(t));
     let db_table = Path::new("./db").join(table);
+
     let mut buffer = try!(File::create(db_table));
     try!(buffer.write_all(serialized.as_bytes()));
 
@@ -287,7 +281,6 @@ mod tests {
 
         drop_table("test6").unwrap();
     }
-
 }
 
 #[cfg(all(feature = "benchmarks", test))]
@@ -351,6 +344,6 @@ mod benchmarks {
 
         update_json("test7", "{\"x\":45,\"y\":9876}}}").unwrap();
         read_table("test7").unwrap();
-        delete_json("test7").unwrap();
+        drop_table("test7").unwrap();
     }
 }
