@@ -1,5 +1,4 @@
 ## Rust Bucket (work in progress)
-Check out this [example repo](https://github.com/selfup/r_b_i_e) showing Iron using Rust Bucket to get started on stable.
 
 ### Goals
 * Provide a simple JSON key-value store API
