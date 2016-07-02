@@ -196,12 +196,6 @@ fn create_db_dir() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "benchmarks")]
-    extern crate test;
-
-    #[cfg(feature = "benchmarks")]
-    use self::test::Bencher;
-
     use super::*;
     use sc;
 
@@ -303,7 +297,17 @@ mod tests {
         drop_table("test6").unwrap();
     }
 
-    #[cfg(feature = "benchmarks")]
+}
+
+#[cfg(all(feature = "benchmarks", test))]
+mod benchmarks {
+    extern crate test;
+
+    use self::test::Bencher;
+
+    use super::*;
+    use sc;
+
     #[bench]
     fn bench_create_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -311,7 +315,6 @@ mod tests {
         b.iter(|| create_table("test4", &object).unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_update_table(b: &mut Bencher) {
         let object = sc::Coordinates { x: 42, y: 9000 };
@@ -319,13 +322,11 @@ mod tests {
         b.iter(|| update_table("test2", &object).unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_read_table(b: &mut Bencher) {
         b.iter(|| read_table("test2").unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table(b: &mut Bencher) {
         let a = json_table::<sc::Coordinates>;
@@ -333,7 +334,6 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_table_records(b: &mut Bencher) {
         let a = json_table_records::<sc::Coordinates>;
@@ -341,7 +341,6 @@ mod tests {
         b.iter(|| a("test2").unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_json_find(b: &mut Bencher) {
         let a = json_find::<sc::Coordinates>;
@@ -349,14 +348,12 @@ mod tests {
         b.iter(|| a("test2", "0").unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_find(b: &mut Bencher) {
         let a = find::<sc::Coordinates>;
         b.iter(|| a("test2", "0").unwrap());
     }
 
-    #[cfg(feature = "benchmarks")]
     #[bench]
     fn bench_store_update_read_and_delete_json(b: &mut Bencher) {
         b.iter(|| store_json("test7", "{\"x\":42,\"y\":9000}}}").unwrap());
