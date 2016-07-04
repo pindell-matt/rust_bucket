@@ -57,6 +57,20 @@ pub fn create_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     Ok(())
 }
 
+pub fn create_empty_table(table: &str) -> Result<()> {
+    try!(create_db_dir());
+
+    let db_table = Path::new("./db").join(table);
+
+    if db_table.exists() {
+        return Ok(());
+    }
+
+    let mut buffer = try!(File::create(db_table));
+
+    Ok(())
+}
+
 pub fn read_table(table: &str) -> Result<String> {
     let db_table = Path::new("./db").join(table);
     let mut file = match File::open(db_table) {
