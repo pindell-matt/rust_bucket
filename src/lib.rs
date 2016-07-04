@@ -244,6 +244,20 @@ mod tests {
     }
 
     #[test]
+    fn it_can_create_and_drop_an_empty_table() {
+        let table_name = format!("empty");
+
+        create_empty_table(&*table_name).unwrap();
+
+        let contents: String = read_table(&*table_name).unwrap();
+        let expected = "";
+
+        assert_eq!(expected, contents);
+
+        drop_table(&*table_name).unwrap();
+    }
+
+    #[test]
     fn it_can_get_and_find() {
         let a = sc::Coordinates { x: 42, y: 9000 };
 
