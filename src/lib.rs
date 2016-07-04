@@ -57,9 +57,18 @@ pub fn create_table<T: Serialize>(table: &str, t: &T) -> Result<()> {
     Ok(())
 }
 
-pub fn create_empty_table(table: &str) -> Result<()> {
+pub fn create_empty_table<T: Serialize>(table: &str) -> Result<()> {
     try!(create_db_dir());
 
+    let record: HashMap<String, T> = HashMap::new();
+
+    let data = Data {
+        table: table.to_string(),
+        next_id: "1".to_string(),
+        records: record,
+    };
+
+    let serialized = try!(serde_json::to_string(&data));
     let db_table = Path::new("./db").join(table);
 
     if db_table.exists() {
@@ -67,6 +76,7 @@ pub fn create_empty_table(table: &str) -> Result<()> {
     }
 
     let mut buffer = try!(File::create(db_table));
+    try!(buffer.write_all(serialized.as_bytes()));
 
     Ok(())
 }
@@ -247,10 +257,10 @@ mod tests {
     fn it_can_create_and_drop_an_empty_table() {
         let table_name = format!("empty");
 
-        create_empty_table(&*table_name).unwrap();
+        create_empty_table::<sc::Coordinates>(&*table_name).unwrap();
 
         let contents: String = read_table(&*table_name).unwrap();
-        let expected = "";
+        let expected = "{\"table\":\"empty\",\"next_id\":\"1\",\"records\":{}}";
 
         assert_eq!(expected, contents);
 
