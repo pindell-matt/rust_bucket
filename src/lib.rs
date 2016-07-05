@@ -64,7 +64,7 @@ pub fn create_empty_table<T: Serialize>(table: &str) -> Result<()> {
 
     let data = Data {
         table: table.to_string(),
-        next_id: "1".to_string(),
+        next_id: "0".to_string(),
         records: record,
     };
 
@@ -260,7 +260,7 @@ mod tests {
         create_empty_table::<sc::Coordinates>(&*table_name).unwrap();
 
         let contents: String = read_table(&*table_name).unwrap();
-        let expected = "{\"table\":\"empty\",\"next_id\":\"1\",\"records\":{}}";
+        let expected = "{\"table\":\"empty\",\"next_id\":\"0\",\"records\":{}}";
 
         assert_eq!(expected, contents);
 
