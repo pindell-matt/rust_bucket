@@ -357,6 +357,8 @@ mod tests {
         assert_eq!(test_record, d("object_test").unwrap());
         assert_eq!(test_data, e("object_test").unwrap());
         assert_eq!(a, f("object_test", "0").unwrap());
+
+        drop_table("object_test").unwrap();
     }
 }
 
