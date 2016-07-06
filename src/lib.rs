@@ -204,6 +204,7 @@ fn create_db_dir() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use super::*;
     use sc;
 
@@ -316,6 +317,46 @@ mod tests {
                    "{\"table\":\"test6\",\"next_id\":\"1\",\"records\":{\"0\":{}}}");
 
         drop_table("test6").unwrap();
+    }
+
+    #[test]
+    fn it_can_store_update_read_and_drop_raw_json() {
+        store_json("json_test_one", "{\"x\":42,\"y\":9000}}}").unwrap();
+        assert_eq!("{\"x\":42,\"y\":9000}}}", read_table("json_test_one").unwrap());
+
+        update_json("json_test_one", "{\"x\":45,\"y\":9876}}}").unwrap();
+        assert_eq!("{\"x\":45,\"y\":9876}}}", read_table("json_test_one").unwrap());
+
+        drop_table("json_test_one").unwrap();
+    }
+
+    #[test]
+    fn it_can_return_objects_from_json() {
+        let a = sc::Coordinates { x: 42, y: 9000 };
+        let b = sc::Coordinates { x: 42, y: 9000 };
+        let c = sc::Coordinates { x: 42, y: 9000 };
+
+        create_table("object_test", &a).unwrap();
+
+        let d = get_table_records::<sc::Coordinates>;
+        let e = get_table::<sc::Coordinates>;
+        let f = find::<sc::Coordinates>;
+
+        let mut record = HashMap::new();
+        record.insert("0".to_string(), b);
+
+        let mut test_record = HashMap::new();
+        test_record.insert("0".to_string(), c);
+
+        let test_data = Data {
+            table: "object_test".to_string(),
+            next_id: "1".to_string(),
+            records: record,
+        };
+
+        assert_eq!(test_record, d("object_test").unwrap());
+        assert_eq!(test_data, e("object_test").unwrap());
+        assert_eq!(a, f("object_test", "0").unwrap());
     }
 }
 
