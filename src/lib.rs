@@ -320,12 +320,15 @@ mod tests {
     }
 
     #[test]
-    fn it_can_store_update_read_and_drop_raw_json() {
+    fn it_can_read_store_drop_and_update_raw_json() {
+        let a = "{\"x\":42,\"y\":9000}}}";
+        let b = "{\"x\":45,\"y\":9876}}}";
+
         store_json("json_test_one", "{\"x\":42,\"y\":9000}}}").unwrap();
-        assert_eq!("{\"x\":42,\"y\":9000}}}", read_table("json_test_one").unwrap());
+        assert_eq!(a, read_table("json_test_one").unwrap());
 
         update_json("json_test_one", "{\"x\":45,\"y\":9876}}}").unwrap();
-        assert_eq!("{\"x\":45,\"y\":9876}}}", read_table("json_test_one").unwrap());
+        assert_eq!(b, read_table("json_test_one").unwrap());
 
         drop_table("json_test_one").unwrap();
     }
